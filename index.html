@@ -1,0 +1,580 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+// เครื่องหมายและลำดับความสำคัญ (Precedence)
+const PRECEDENCE = {
+  '∪': 1, '+': 1, '|': 1,
+  '-': 1,
+  '∩': 2, '*': 2, '&': 2,
+};
+
+const MASKS = {
+  'A': 0b11110000,
+  'B': 0b11001100,
+  'C': 0b10101010,
+  'U': 0b11111111,
+  '∅': 0b00000000,
+};
+
+const AVAILABLE_COLORS = [
+  { hex: '#EF4444', name: 'แดง' },
+  { hex: '#3B82F6', name: 'น้ำเงิน' },
+  { hex: '#FACC15', name: 'เหลือง' },
+  { hex: '#22C55E', name: 'เขียว' },
+  { hex: '#A855F7', name: 'ม่วง' }
+];
+
+function hex2rgb(hex) {
+  if (!hex) return { r: 255, g: 255, b: 255 };
+  let r = parseInt(hex.slice(1, 3), 16);
+  let g = parseInt(hex.slice(3, 5), 16);
+  let b = parseInt(hex.slice(5, 7), 16);
+  return { r, g, b };
+}
+
+function rgb2hex(r, g, b) {
+  return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1).toUpperCase();
+}
+
+function mixColors(bgHex, brushHex) {
+  const bg = bgHex.toUpperCase();
+  const br = brushHex.toUpperCase();
+  if (bg === '#FFFFFF') return br;
+  if (br === '#FFFFFF') return '#FFFFFF';
+  let c1 = hex2rgb(bg);
+  let c2 = hex2rgb(br);
+  let r = Math.round((c1.r + c2.r) / 2);
+  let g = Math.round((c1.g + c2.g) / 2);
+  let b = Math.round((c1.b + c2.b) / 2);
+  return rgb2hex(r, g, b);
+}
+
+// --- ระบบจัดการสมการ ---
+function tokenize(str, setCount) {
+  str = str.replace(/\s+/g, '');
+  const tokens = [];
+  let expectSet = true;
+  for (let i = 0; i < str.length; i++) {
+    let char = str[i];
+    if ((char === 'C' || char === 'c') && setCount === 2) throw new Error("Cannot use C in 2-set mode");
+
+    if (char === 'A' || char === 'B' || char === 'C' || char === '∅' || char === '0') {
+      tokens.push({ type: 'SET', val: char === '0' ? '∅' : char });
+      expectSet = false;
+    } else if (char === 'U' || char === 'u') {
+      if (expectSet) {
+        tokens.push({ type: 'SET', val: 'U' });
+        expectSet = false;
+      } else {
+        tokens.push({ type: 'OP_BIN', val: '∪', prec: 1 });
+        expectSet = true;
+      }
+    } else if (char === '∪' || char === '+') {
+      tokens.push({ type: 'OP_BIN', val: '∪', prec: 1 });
+      expectSet = true;
+    } else if (char === 'n' || char === '∩' || char === '*') {
+      tokens.push({ type: 'OP_BIN', val: '∩', prec: 2 });
+      expectSet = true;
+    } else if (char === '-') {
+      tokens.push({ type: 'OP_BIN', val: '-', prec: 1 });
+      expectSet = true;
+    } else if (char === "'" || char === "′" || char === "c") {
+      tokens.push({ type: 'OP_UNARY', val: '′' });
+      expectSet = false;
+    } else if (char === '(') {
+      tokens.push({ type: 'LPAREN', val: '(' });
+      expectSet = true;
+    } else if (char === ')') {
+      tokens.push({ type: 'RPAREN', val: ')' });
+      expectSet = false;
+    }
+  }
+  return tokens;
+}
+
+function toRPN(tokens) {
+  const output = [];
+  const ops = [];
+  for (let t of tokens) {
+    if (t.type === 'SET') output.push(t);
+    else if (t.type === 'OP_UNARY') output.push(t);
+    else if (t.type === 'OP_BIN') {
+      while (ops.length > 0 && ops[ops.length - 1].type === 'OP_BIN' && ops[ops.length - 1].prec >= t.prec) output.push(ops.pop());
+      ops.push(t);
+    } else if (t.type === 'LPAREN') ops.push(t);
+    else if (t.type === 'RPAREN') {
+      while (ops.length > 0 && ops[ops.length - 1].type !== 'LPAREN') output.push(ops.pop());
+      if (ops.length > 0 && ops[ops.length - 1].type === 'LPAREN') ops.pop();
+    }
+  }
+  while (ops.length > 0) output.push(ops.pop());
+  return output;
+}
+
+function evaluateRPN(rpn) {
+  const stack = [];
+  for (let t of rpn) {
+    if (t.type === 'SET') stack.push(MASKS[t.val]);
+    else if (t.type === 'OP_UNARY') {
+      if (stack.length < 1) return null;
+      stack.push((~stack.pop()) & 0xFF);
+    } else if (t.type === 'OP_BIN') {
+      if (stack.length < 2) return null;
+      let right = stack.pop(), left = stack.pop();
+      if (t.val === '∪') stack.push(left | right);
+      else if (t.val === '∩') stack.push(left & right);
+      else if (t.val === '-') stack.push(left & (~right));
+    }
+  }
+  return stack.length === 1 ? stack[0] : null;
+}
+
+export default function App() {
+  const CUSTOM_TEXT = "โหมดระบายสีอิสระ (Manual Mode)";
+  
+  // States
+  const [expression, setExpression] = useState('A ∪ B');
+  const [activeMask, setActiveMask] = useState(0b11111100);
+  const [error, setError] = useState(false);
+  const [regionColors, setRegionColors] = useState(Array(8).fill('#FFFFFF'));
+  
+  // เครื่องมือที่ทำงานอยู่ (PAINT = ระบายสี, TEXT = ใส่ข้อความ)
+  const [activeTool, setActiveTool] = useState('PAINT'); 
+  const [selectedBrushColor, setSelectedBrushColor] = useState('#3B82F6'); 
+  const [isEraser, setIsEraser] = useState(false);
+  
+  // ระบบข้อความในแผนภาพ
+  const [regionTexts, setRegionTexts] = useState(Array(8).fill(''));
+  const [selectedRegion, setSelectedRegion] = useState(null); // ช่องที่เลือกพิมพ์อยู่ (0-7)
+  const textInputRef = useRef(null);
+  
+  const [setCount, setSetCount] = useState(3);
+  const [labels, setLabels] = useState({ A: 'A', B: 'B', C: 'C', U: 'U' });
+
+  const currentBrushColor = isEraser ? '#FFFFFF' : selectedBrushColor;
+
+  // ตำแหน่งวงกลมและข้อความ (ขยายขนาดวงกลมเป็น r=120)
+  const layout = setCount === 3 ? {
+    A: { cx: 240, cy: 210, tx: 180, ty: 50 },
+    B: { cx: 360, cy: 210, tx: 420, ty: 50 },
+    C: { cx: 300, cy: 314, tx: 300, ty: 470 }
+  } : {
+    A: { cx: 240, cy: 250, tx: 180, ty: 90 },
+    B: { cx: 360, cy: 250, tx: 420, ty: 90 },
+    C: { cx: -1000, cy: -1000, tx: -1000, ty: -1000 }
+  };
+
+  // พิกัดสำหรับจัดวางข้อความตรงกลางแต่ละส่วน (อ้างอิงจากการขยายใหม่)
+  const textPositions3 = {
+    0: { x: 80, y: 460 },
+    1: { x: 300, y: 395 }, // C only
+    2: { x: 440, y: 195 }, // B only
+    3: { x: 370, y: 295 }, // B & C
+    4: { x: 160, y: 195 }, // A only
+    5: { x: 230, y: 295 }, // A & C
+    6: { x: 300, y: 165 }, // A & B
+    7: { x: 300, y: 245 }  // A & B & C
+  };
+
+  const textPositions2 = {
+    0: { x: 80, y: 460 },
+    2: { x: 440, y: 250 }, // B only
+    4: { x: 160, y: 250 }, // A only
+    6: { x: 300, y: 250 }  // A & B
+  };
+
+  useEffect(() => {
+    if (setCount === 2) {
+      if (expression.includes('C')) setExpression('A ∪ B');
+      // ล้างสี/ข้อความ ของช่องที่เกี่ยวกับ C
+      setRegionColors(prev => prev.map((c, i) => [1,3,5,7].includes(i) ? '#FFFFFF' : c));
+      setRegionTexts(prev => prev.map((t, i) => [1,3,5,7].includes(i) ? '' : t));
+    }
+  }, [setCount]);
+
+  useEffect(() => {
+    if (expression === CUSTOM_TEXT) return;
+    if (!expression.trim()) {
+      setActiveMask(0);
+      setError(false);
+      return;
+    }
+    try {
+      const result = evaluateRPN(toRPN(tokenize(expression, setCount)));
+      if (result !== null) { setActiveMask(result); setError(false); } 
+      else setError(true);
+    } catch (e) { setError(true); }
+  }, [expression, setCount]);
+
+  const handleKeyPress = (symbol) => {
+    if (expression === CUSTOM_TEXT) setExpression(symbol);
+    else setExpression(prev => prev + symbol);
+  };
+
+  const handleBackspace = () => {
+    if (expression === CUSTOM_TEXT) setExpression('');
+    else setExpression(prev => prev.slice(0, -1));
+  };
+
+  const handleClearAll = () => {
+    setRegionColors(Array(8).fill('#FFFFFF'));
+    setRegionTexts(Array(8).fill(''));
+    setExpression('');
+  };
+
+  const getDisplayColor = (bitIndex) => {
+    let base = regionColors[bitIndex];
+    if (expression !== CUSTOM_TEXT && !error && (activeMask & (1 << bitIndex))) {
+      return mixColors(base, selectedBrushColor);
+    }
+    return base;
+  };
+
+  const applyEquationToCanvas = () => {
+    if (expression === CUSTOM_TEXT || error) return;
+    let newColors = [...regionColors];
+    for (let i = 0; i < 8; i++) {
+      if (activeMask & (1 << i)) {
+        newColors[i] = mixColors(newColors[i], selectedBrushColor);
+      }
+    }
+    setRegionColors(newColors);
+    setExpression(CUSTOM_TEXT); 
+  };
+
+  const handleSvgClick = (e) => {
+    const svg = e.currentTarget;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const x = svgP.x;
+    const y = svgP.y;
+
+    if (x < 10 || x > 590 || y < 10 || y > 490) return;
+
+    // รัศมี r=120, r^2 = 14400
+    const inA = ((x - layout.A.cx) ** 2 + (y - layout.A.cy) ** 2) <= 14400;
+    const inB = ((x - layout.B.cx) ** 2 + (y - layout.B.cy) ** 2) <= 14400;
+    const inC = setCount === 3 && ((x - layout.C.cx) ** 2 + (y - layout.C.cy) ** 2) <= 14400;
+
+    let bit = 0;
+    if (inC) bit |= 1;
+    if (inB) bit |= 2;
+    if (inA) bit |= 4;
+
+    if (activeTool === 'TEXT') {
+      setSelectedRegion(bit);
+      setTimeout(() => textInputRef.current?.focus(), 50);
+      return; // ไม่ต้องทำอะไรกับการระบายสี
+    }
+
+    // กรณีทำงานในโหมด PAINT
+    let newColors = [...regionColors];
+    if (expression !== CUSTOM_TEXT && !error) {
+      for (let i = 0; i < 8; i++) {
+        if (activeMask & (1 << i)) newColors[i] = mixColors(newColors[i], selectedBrushColor);
+      }
+    }
+    newColors[bit] = mixColors(newColors[bit], currentBrushColor);
+    setRegionColors(newColors);
+    setExpression(CUSTOM_TEXT);
+  };
+
+  // กรองเฉพาะ ตัวเลข, เครื่องหมาย, และตัวอักษร (อังกฤษ, ไทย)
+  const handleRegionTextChange = (e) => {
+    const val = e.target.value;
+    if (/^[a-zA-Z\u0E00-\u0E7F0-9\+\-\*\/\=\(\)\s]*$/.test(val)) {
+      let newTexts = [...regionTexts];
+      newTexts[selectedRegion] = val;
+      setRegionTexts(newTexts);
+    }
+  };
+
+  const getRegionName = (bit) => {
+    if (bit === null) return '';
+    if (bit === 0) return 'ด้านนอกเซต (Universe)';
+    const parts = [];
+    if (bit & 4) parts.push('A');
+    if (bit & 2) parts.push('B');
+    if (bit & 1) parts.push('C');
+    return `ส่วนที่ทับกัน: ${parts.join(' ∩ ')}`;
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 flex items-center justify-center font-sans text-slate-800">
+      <div className="max-w-6xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+        
+        <div className="bg-blue-600 p-4 sm:p-5 text-white flex flex-col md:flex-row justify-between items-center gap-4">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold">เครื่องมือแผนภาพเวนน์ 3 เซต แบบเต็มรูปแบบ</h1>
+            <p className="text-blue-100 mt-1 text-sm">ระบายสี, ใส่ข้อความ, และเปลี่ยนชื่อเซตได้อย่างอิสระ</p>
+          </div>
+          <div className="flex bg-blue-700 p-1 rounded-lg">
+            <button 
+              onClick={() => { setSetCount(2); setSelectedRegion(null); }}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${setCount === 2 ? 'bg-white text-blue-700 shadow' : 'text-blue-100 hover:text-white hover:bg-blue-600'}`}
+            >
+              2 เซต
+            </button>
+            <button 
+              onClick={() => { setSetCount(3); setSelectedRegion(null); }}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${setCount === 3 ? 'bg-white text-blue-700 shadow' : 'text-blue-100 hover:text-white hover:bg-blue-600'}`}
+            >
+              3 เซต
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-8 p-6">
+          
+          {/* ซ้าย: แผนภาพ (สัดส่วน 7 ใน 12 เพื่อให้รูปใหญ่ขึ้น) */}
+          <div className="lg:col-span-7 flex flex-col items-center justify-start border-b lg:border-b-0 lg:border-r border-slate-200 pb-8 lg:pb-0 lg:pr-8">
+            
+            {/* กล่องสลับเครื่องมือ */}
+            <div className="flex w-full mb-4 bg-slate-100 p-1 rounded-xl">
+              <button 
+                onClick={() => setActiveTool('PAINT')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-sm transition-all ${activeTool === 'PAINT' ? 'bg-white shadow-sm text-blue-600 border border-slate-200' : 'text-slate-500 hover:bg-slate-200'}`}
+              >
+                <span className="text-lg">🖌️</span> ระบายสี
+              </button>
+              <button 
+                onClick={() => setActiveTool('TEXT')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-sm transition-all ${activeTool === 'TEXT' ? 'bg-white shadow-sm text-blue-600 border border-slate-200' : 'text-slate-500 hover:bg-slate-200'}`}
+              >
+                <span className="text-lg">🔤</span> ใส่ตัวเลข/ตัวแปร
+              </button>
+            </div>
+
+            <svg 
+              viewBox="0 -35 600 545" 
+              className={`w-full max-w-[550px] drop-shadow-sm select-none transition-all ${activeTool === 'TEXT' ? 'cursor-text' : 'cursor-pointer'}`} 
+              onClick={handleSvgClick}
+            >
+              <defs>
+                <circle id="cA" cx={layout.A.cx} cy={layout.A.cy} r="120" />
+                <circle id="cB" cx={layout.B.cx} cy={layout.B.cy} r="120" />
+                <circle id="cC" cx={layout.C.cx} cy={layout.C.cy} r="120" />
+                <clipPath id="clipC"><use href="#cC"/></clipPath>
+
+                {/* Masks สำหรับพื้นที่ทับซ้อน */}
+                <mask id="m0"><rect width="100%" height="100%" fill="white" /><use href="#cA" fill="black" /><use href="#cB" fill="black" /><use href="#cC" fill="black" /></mask>
+                <mask id="m1"><rect width="100%" height="100%" fill="white" /><use href="#cA" fill="black" /><use href="#cB" fill="black" /></mask>
+                <mask id="m2"><rect width="100%" height="100%" fill="white" /><use href="#cA" fill="black" /><use href="#cC" fill="black" /></mask>
+                <mask id="m3"><use href="#cC" fill="white" /><use href="#cA" fill="black" /></mask>
+                <mask id="m4"><rect width="100%" height="100%" fill="white" /><use href="#cB" fill="black" /><use href="#cC" fill="black" /></mask>
+                <mask id="m5"><use href="#cC" fill="white" /><use href="#cB" fill="black" /></mask>
+                <mask id="m6"><use href="#cB" fill="white" /><use href="#cC" fill="black" /></mask>
+                <mask id="m7"><use href="#cB" fill="white" clipPath="url(#clipC)" /></mask>
+              </defs>
+
+              <rect x="10" y="10" width="580" height="480" rx="12" fill={getDisplayColor(0)} mask="url(#m0)" />
+              <use href="#cC" fill={getDisplayColor(1)} mask="url(#m1)" />
+              <use href="#cB" fill={getDisplayColor(2)} mask="url(#m2)" />
+              <use href="#cB" fill={getDisplayColor(3)} mask="url(#m3)" />
+              <use href="#cA" fill={getDisplayColor(4)} mask="url(#m4)" />
+              <use href="#cA" fill={getDisplayColor(5)} mask="url(#m5)" />
+              <use href="#cA" fill={getDisplayColor(6)} mask="url(#m6)" />
+              <use href="#cA" fill={getDisplayColor(7)} mask="url(#m7)" />
+
+              {/* เส้นขอบแผนภาพ */}
+              <use href="#cA" fill="none" stroke="#1E293B" strokeWidth="2.5" />
+              <use href="#cB" fill="none" stroke="#1E293B" strokeWidth="2.5" />
+              {setCount === 3 && <use href="#cC" fill="none" stroke="#1E293B" strokeWidth="2.5" />}
+              <rect x="10" y="10" width="580" height="480" rx="12" fill="none" stroke="#1E293B" strokeWidth="4" />
+
+              {/* ไฮไลท์กรอบตอนเลือกข้อความ */}
+              {activeTool === 'TEXT' && selectedRegion === 0 && <rect x="10" y="10" width="580" height="480" rx="12" fill="none" stroke="#3B82F6" strokeWidth="6" strokeDasharray="6,6" />}
+
+              {/* แสดงตัวอักษรของแต่ละส่วนที่ถูกป้อน */}
+              {regionTexts.map((txt, idx) => {
+                if (!txt) return null;
+                const pos = (setCount === 3 ? textPositions3 : textPositions2)[idx];
+                if (!pos) return null;
+                return (
+                  <text key={idx} x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="middle" fontSize="20" fontWeight="bold" fill="#0F172A" className="pointer-events-none drop-shadow-sm">
+                    {txt}
+                  </text>
+                );
+              })}
+
+              {/* ข้อความชื่อเซต (จัด Center Alignment) */}
+              <text x={layout.A.tx} y={layout.A.ty} textAnchor="middle" fontSize="26" fontWeight="bold" fill="#1E293B">{labels.A}</text>
+              <text x={layout.B.tx} y={layout.B.ty} textAnchor="middle" fontSize="26" fontWeight="bold" fill="#1E293B">{labels.B}</text>
+              {setCount === 3 && <text x={layout.C.tx} y={layout.C.ty} textAnchor="middle" fontSize="26" fontWeight="bold" fill="#1E293B">{labels.C}</text>}
+              
+              {/* สัญลักษณ์เอกภพสัมพัทธ์ (Universe) อยู่นอกกรอบ */}
+              <text x="580" y="0" textAnchor="end" fontSize="26" fontWeight="bold" fill="#1E293B">{labels.U}</text>
+            </svg>
+            
+            <p className="text-slate-500 text-sm mt-4 text-center">
+              {activeTool === 'PAINT' ? '💡 เลือกสีด้านขวา และคลิกทับช่องที่มีสีเดิมเพื่อผสมสี' : '💡 คลิกที่ช่องว่างบนภาพเพื่อพิมพ์ตัวเลขหรือตัวแปร'}
+            </p>
+
+            {/* ส่วนตั้งชื่อเซต */}
+            <div className="mt-6 w-full max-w-[400px] bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">ตั้งชื่อเซต (สามารถพิมพ์ยาวๆ ได้)</label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <span className="text-xs text-slate-400 block mb-1">ป้าย A</span>
+                  <input type="text" value={labels.A} onChange={e => setLabels({...labels, A: e.target.value.substring(0, 25)})} className="w-full px-2 py-1.5 text-sm font-medium border rounded-lg text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="A" />
+                </div>
+                <div className="flex-1">
+                  <span className="text-xs text-slate-400 block mb-1">ป้าย B</span>
+                  <input type="text" value={labels.B} onChange={e => setLabels({...labels, B: e.target.value.substring(0, 25)})} className="w-full px-2 py-1.5 text-sm font-medium border rounded-lg text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="B" />
+                </div>
+                {setCount === 3 && (
+                  <div className="flex-1">
+                    <span className="text-xs text-slate-400 block mb-1">ป้าย C</span>
+                    <input type="text" value={labels.C} onChange={e => setLabels({...labels, C: e.target.value.substring(0, 25)})} className="w-full px-2 py-1.5 text-sm font-medium border rounded-lg text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="C" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <span className="text-xs text-slate-400 block mb-1">ป้าย U</span>
+                  <input type="text" value={labels.U} onChange={e => setLabels({...labels, U: e.target.value.substring(0, 25)})} className="w-full px-2 py-1.5 text-sm font-medium border rounded-lg text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="U" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ขวา: แผงควบคุม (สัดส่วน 5 ใน 12) */}
+          <div className="lg:col-span-5 flex flex-col pt-6 lg:pt-0">
+            
+            {/* กล่องใส่ข้อความลงในช่อง (แสดงเฉพาะโหมด TEXT) */}
+            {activeTool === 'TEXT' ? (
+              <div className="mb-6 bg-blue-50 p-5 rounded-2xl border-2 border-blue-200">
+                <h2 className="text-lg font-bold text-blue-900 mb-1">✏️ ใส่ข้อมูลในช่อง</h2>
+                <p className="text-sm text-blue-700 mb-4">คลิกที่แผนภาพด้านซ้ายเพื่อเลือกช่องที่ต้องการป้อน</p>
+                
+                <div className="bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">
+                    พื้นที่ที่เลือก: <span className="text-blue-600">{getRegionName(selectedRegion) || '(ยังไม่ได้คลิกเลือก)'}</span>
+                  </label>
+                  <input
+                    ref={textInputRef}
+                    type="text"
+                    disabled={selectedRegion === null}
+                    value={selectedRegion !== null ? regionTexts[selectedRegion] : ''}
+                    onChange={handleRegionTextChange}
+                    placeholder={selectedRegion === null ? "กรุณาคลิกเลือกช่องบนรูป..." : "เช่น 2x + 10"}
+                    className="w-full px-4 py-3 text-lg font-mono border-2 border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-400"
+                  />
+                  <p className="text-xs text-slate-400 mt-2">
+                    รองรับ: ตัวอักษร, ตัวเลข 0-9, และ + - * / = ( )
+                  </p>
+                </div>
+
+                <button onClick={() => setRegionTexts(Array(8).fill(''))} className="mt-4 w-full py-2 bg-white border border-red-200 text-red-600 font-bold rounded-lg hover:bg-red-50 transition-colors">
+                  ล้างตัวอักษรทั้งหมด
+                </button>
+              </div>
+            ) : (
+              /* จานสีและสมการ (แสดงเฉพาะโหมด PAINT) */
+              <>
+                <div className="mb-6 bg-slate-100 p-4 rounded-xl border border-slate-200">
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="text-sm font-semibold text-slate-700">จานสี (เลือกทีละสี)</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500 font-medium">{isEraser ? 'โหมดยางลบ:' : 'สีพู่กัน:'}</span>
+                      <div 
+                        className="w-8 h-8 rounded-full border-2 border-slate-300 shadow-inner flex items-center justify-center text-sm" 
+                        style={{ backgroundColor: currentBrushColor }}
+                      >
+                        {isEraser && '🧽'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-wrap items-center">
+                    {AVAILABLE_COLORS.map(c => {
+                      const isSelected = !isEraser && selectedBrushColor === c.hex;
+                      return (
+                        <button
+                          key={c.hex}
+                          onClick={() => { setIsEraser(false); setSelectedBrushColor(c.hex); }}
+                          className={`relative w-10 h-10 rounded-full border-2 transition-transform hover:scale-110 active:scale-95 ${isSelected ? 'border-slate-800 scale-110 shadow-md' : 'border-slate-300'}`}
+                          style={{ backgroundColor: c.hex }}
+                          title={c.name}
+                        >
+                          {isSelected && (
+                            <span className="absolute inset-0 flex items-center justify-center text-white drop-shadow-md font-bold text-sm mix-blend-difference">✓</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                    
+                    <div className="w-px h-8 bg-slate-300 mx-1"></div>
+
+                    <button
+                      onClick={() => setIsEraser(true)}
+                      className={`relative flex items-center gap-1 px-3 h-10 rounded-full border-2 transition-transform hover:scale-105 active:scale-95 ${isEraser ? 'border-slate-800 bg-slate-200 shadow-md scale-105' : 'border-slate-300 bg-white'}`}
+                      title="โหมดยางลบ (ลบสีในพื้นที่)"
+                    >
+                      <span className="text-lg">🧽</span>
+                      <span className={`text-sm font-bold ${isEraser ? 'text-slate-800' : 'text-slate-500'}`}>ยางลบ</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">ระบายสีด้วยสมการเซต</label>
+                  <div className="flex gap-2">
+                    <div className={`flex-1 relative flex items-center bg-slate-50 border-2 rounded-xl transition-colors ${error && expression !== CUSTOM_TEXT ? 'border-red-400 bg-red-50' : 'border-slate-300 focus-within:border-blue-500'}`}>
+                      <input
+                        type="text"
+                        value={expression}
+                        onChange={(e) => setExpression(e.target.value)}
+                        placeholder="เช่น A ∪ B"
+                        className={`w-full bg-transparent px-4 py-3 outline-none text-xl font-mono ${expression === CUSTOM_TEXT ? 'text-slate-400 text-base' : 'text-slate-800'}`}
+                      />
+                    </div>
+                    <button 
+                      onClick={applyEquationToCanvas}
+                      disabled={expression === CUSTOM_TEXT || error}
+                      className="bg-blue-600 disabled:bg-slate-300 hover:bg-blue-700 text-white font-bold px-4 rounded-xl shadow-sm transition-colors whitespace-nowrap"
+                    >
+                      เทสี
+                    </button>
+                  </div>
+                  {error && expression !== CUSTOM_TEXT && expression.length > 0 && (
+                    <p className="text-red-500 text-sm mt-1 font-medium">⚠️ รูปแบบสมการไม่ถูกต้อง (ในโหมด 2 เซต ห้ามพิมพ์ C)</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-5 gap-2 mb-4">
+                  {['A', 'B'].map(sym => (
+                    <button key={sym} onClick={() => handleKeyPress(sym)} className="bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold py-2.5 rounded-lg shadow-sm active:scale-95 transition-transform text-lg">
+                      {sym}
+                    </button>
+                  ))}
+                  {setCount === 3 ? (
+                    <button onClick={() => handleKeyPress('C')} className="bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold py-2.5 rounded-lg shadow-sm active:scale-95 transition-transform text-lg">C</button>
+                  ) : (
+                    <div className="bg-transparent"></div>
+                  )}
+                  {['U', '∅'].map(sym => (
+                    <button key={sym} onClick={() => handleKeyPress(sym)} className="bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold py-2.5 rounded-lg shadow-sm active:scale-95 transition-transform text-lg">
+                      {sym}
+                    </button>
+                  ))}
+                  {['∪', '∩', '-', '′', '⌫'].map(sym => (
+                    <button key={sym} onClick={() => sym === '⌫' ? handleBackspace() : handleKeyPress(sym)} className="bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-800 font-bold py-2.5 rounded-lg shadow-sm active:scale-95 transition-transform text-lg">
+                      {sym}
+                    </button>
+                  ))}
+                  {['(', ')'].map(sym => (
+                    <button key={sym} onClick={() => handleKeyPress(sym)} className="col-span-1 bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold py-2.5 rounded-lg shadow-sm active:scale-95 transition-transform text-lg">
+                      {sym}
+                    </button>
+                  ))}
+                  <button onClick={handleClearAll} className="col-span-3 bg-red-50 border border-red-200 hover:bg-red-100 text-red-700 font-bold py-2.5 rounded-lg shadow-sm active:scale-95 transition-transform">
+                    ล้างพื้นที่และลบสมการทั้งหมด
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
