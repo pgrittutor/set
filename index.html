@@ -63,7 +63,7 @@
                     </defs>
 
                     <!-- Painted Regions -->
-                    <rect id="reg-0" x="0" y="0" width="650" height="570" fill="#FFFFFF" mask="url(#m0)" />
+                    <rect id="reg-0" x="20" y="0" width="610" height="550" fill="#FFFFFF" mask="url(#m0)" />
                     <use id="reg-1" href="#cC" fill="#FFFFFF" mask="url(#m1)" />
                     <use id="reg-2" href="#cB" fill="#FFFFFF" mask="url(#m2)" />
                     <use id="reg-3" href="#cB" fill="#FFFFFF" mask="url(#m3)" />
@@ -76,19 +76,19 @@
                     <use id="border-A" href="#cA" fill="none" stroke="#1E293B" stroke-width="2.5" />
                     <use id="border-B" href="#cB" fill="none" stroke="#1E293B" stroke-width="2.5" />
                     <use id="border-C" href="#cC" fill="none" stroke="#1E293B" stroke-width="2.5" />
-                    <rect x="0" y="0" width="650" height="570" fill="none" stroke="#1E293B" stroke-width="4" />
+                    <rect x="20" y="0" width="610" height="550" fill="none" stroke="#1E293B" stroke-width="4" />
 
                     <!-- Set Labels -->
                     <text id="label-A-display" text-anchor="middle" font-size="26" font-weight="bold" fill="#1E293B" class="pointer-events-none">A</text>
                     <text id="label-B-display" text-anchor="middle" font-size="26" font-weight="bold" fill="#1E293B" class="pointer-events-none" style="display:none;">B</text>
                     <text id="label-C-display" text-anchor="middle" font-size="26" font-weight="bold" fill="#1E293B" class="pointer-events-none" style="display:none;">C</text>
-                    <text id="label-U-display" x="635" y="30" text-anchor="end" font-size="26" font-weight="bold" fill="#1E293B" class="pointer-events-none">U</text>
+                    <text id="label-U-display" x="610" y="35" text-anchor="end" font-size="26" font-weight="bold" fill="#1E293B" class="pointer-events-none">U</text>
 
                     <!-- Freehand Texts Container -->
                     <g id="texts-container"></g>
                 </svg>
 
-                <p id="helper-text" class="text-slate-500 text-sm mt-4 text-center">💡 ลากที่วงกลมเพื่อย้ายตำแหน่งอิสระ</p>
+                <p id="helper-text" class="text-slate-500 text-sm mt-4 text-center">💡 ลากที่วงกลมหรือข้อความเพื่อย้ายตำแหน่งอิสระ</p>
             </div>
 
             <!-- Right: Control Panel -->
@@ -165,7 +165,18 @@
                     <div class="bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
                         <input type="text" id="text-input" disabled placeholder="คลิกบนภาพก่อน..." class="w-full px-4 py-3 text-lg font-mono border-2 border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-400" oninput="handleTextChange(this.value)">
                         
-                        <button id="btn-delete-text" onclick="deleteSelectedText()" class="mt-2 text-xs text-red-500 font-bold hover:underline hidden">
+                        <!-- เพิ่มส่วนปรับขนาดข้อความ -->
+                        <div id="text-size-container" class="mt-4 hidden border-t border-slate-100 pt-3">
+                            <label class="block text-xs font-bold text-slate-500 mb-2">ขนาดข้อความ:</label>
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-bold text-slate-400">a</span>
+                                <input type="range" id="text-size-input" min="12" max="72" value="22" class="flex-1 cursor-pointer" oninput="handleTextSizeChange(this.value)">
+                                <span class="text-lg font-bold text-slate-600">A</span>
+                                <span id="text-size-display" class="text-sm font-bold text-blue-600 w-6 text-right">22</span>
+                            </div>
+                        </div>
+
+                        <button id="btn-delete-text" onclick="deleteSelectedText()" class="mt-3 text-xs text-red-500 font-bold hover:underline hidden">
                             ลบข้อความที่เลือก
                         </button>
                     </div>
@@ -220,6 +231,9 @@
         const textsContainer = document.getElementById('texts-container');
         const brushPreview = document.getElementById('brush-preview');
         const brushLabel = document.getElementById('brush-label');
+        const textSizeContainer = document.getElementById('text-size-container');
+        const textSizeInput = document.getElementById('text-size-input');
+        const textSizeDisplay = document.getElementById('text-size-display');
 
         // --- Init ---
         function init() {
@@ -247,7 +261,7 @@
             const helper = document.getElementById('helper-text');
             if(tool === 'MOVE') {
                 svg.className = "w-full max-w-[600px] border border-slate-100 bg-white rounded-xl shadow-sm transition-all cursor-grab";
-                helper.innerText = "💡 ลากที่วงกลมเพื่อย้ายตำแหน่งอิสระ";
+                helper.innerText = "💡 ลากที่วงกลมหรือข้อความเพื่อย้ายตำแหน่งอิสระ";
             } else if(tool === 'PAINT') {
                 svg.className = "w-full max-w-[600px] border border-slate-100 bg-white rounded-xl shadow-sm transition-all cursor-crosshair";
                 helper.innerText = "💡 เลือกสีขวามือ และคลิกเทสีลงในช่อง (ทาสีทับเพื่อผสมสี)";
@@ -385,13 +399,31 @@
                 textInput.disabled = true;
                 textInput.placeholder = "คลิกบนภาพก่อน...";
                 btnDeleteText.classList.add('hidden');
+                textSizeContainer.classList.add('hidden');
             } else {
                 const txt = canvasTexts.find(t => t.id === selectedTextId);
                 textInput.value = txt ? txt.text : '';
                 textInput.disabled = false;
                 textInput.placeholder = "พิมพ์ข้อความ (เช่น 2x+1)";
                 btnDeleteText.classList.remove('hidden');
+                textSizeContainer.classList.remove('hidden');
+                
+                const size = txt && txt.fontSize ? txt.fontSize : 22;
+                textSizeInput.value = size;
+                textSizeDisplay.textContent = size;
+
                 setTimeout(() => textInput.focus(), 50);
+            }
+        }
+
+        function handleTextSizeChange(val) {
+            if (selectedTextId !== null) {
+                const txtObj = canvasTexts.find(t => t.id === selectedTextId);
+                if (txtObj) {
+                    txtObj.fontSize = parseInt(val);
+                    textSizeDisplay.textContent = val;
+                    renderTexts();
+                }
             }
         }
 
@@ -419,7 +451,7 @@
                 textNode.setAttribute("y", txt.y);
                 textNode.setAttribute("text-anchor", "middle");
                 textNode.setAttribute("dominant-baseline", "middle");
-                textNode.setAttribute("font-size", "22");
+                textNode.setAttribute("font-size", txt.fontSize || "22");
                 textNode.setAttribute("font-weight", "bold");
                 textNode.setAttribute("fill", "#0F172A");
                 textNode.setAttribute("class", "pointer-events-none");
@@ -453,28 +485,47 @@
             const { x, y } = pt;
 
             if (activeTool === 'MOVE') {
-                const hitC = circles.C.active && Math.hypot(x - circles.C.cx, y - circles.C.cy) <= circles.C.r;
-                const hitB = circles.B.active && Math.hypot(x - circles.B.cx, y - circles.B.cy) <= circles.B.r;
-                const hitA = circles.A.active && Math.hypot(x - circles.A.cx, y - circles.A.cy) <= circles.A.r;
-
-                let targetId = null;
-                // ลำดับการกด (C ทับ B ทับ A)
-                if (hitC) targetId = 'C';
-                else if (hitB) targetId = 'B';
-                else if (hitA) targetId = 'A';
-
-                if (targetId) {
-                    // **สำคัญมาก!** ล็อกพอยน์เตอร์ให้อยู่กับ SVG ไม่ว่านิ้วจะหลุดกรอบไปไหน
+                // เช็คว่ากดโดนข้อความก่อน (เพราะข้อความอยู่ด้านบนสุด)
+                const hitTextIdx = canvasTexts.findIndex(t => Math.abs(t.x - x) < 40 && Math.abs(t.y - y) < 30);
+                
+                if (hitTextIdx >= 0) {
+                    const hitText = canvasTexts[hitTextIdx];
                     svg.setPointerCapture(e.pointerId);
                     svg.classList.add('cursor-grabbing');
                     svg.classList.remove('cursor-grab');
                     
                     dragInfo = { 
-                        id: targetId, 
-                        offsetX: x - circles[targetId].cx, 
-                        offsetY: y - circles[targetId].cy,
+                        type: 'text',
+                        id: hitText.id, 
+                        offsetX: x - hitText.x, 
+                        offsetY: y - hitText.y,
                         pointerId: e.pointerId 
                     };
+                } else {
+                    const hitC = circles.C.active && Math.hypot(x - circles.C.cx, y - circles.C.cy) <= circles.C.r;
+                    const hitB = circles.B.active && Math.hypot(x - circles.B.cx, y - circles.B.cy) <= circles.B.r;
+                    const hitA = circles.A.active && Math.hypot(x - circles.A.cx, y - circles.A.cy) <= circles.A.r;
+
+                    let targetId = null;
+                    // ลำดับการกด (C ทับ B ทับ A)
+                    if (hitC) targetId = 'C';
+                    else if (hitB) targetId = 'B';
+                    else if (hitA) targetId = 'A';
+
+                    if (targetId) {
+                        // **สำคัญมาก!** ล็อกพอยน์เตอร์ให้อยู่กับ SVG ไม่ว่านิ้วจะหลุดกรอบไปไหน
+                        svg.setPointerCapture(e.pointerId);
+                        svg.classList.add('cursor-grabbing');
+                        svg.classList.remove('cursor-grab');
+                        
+                        dragInfo = { 
+                            type: 'circle',
+                            id: targetId, 
+                            offsetX: x - circles[targetId].cx, 
+                            offsetY: y - circles[targetId].cy,
+                            pointerId: e.pointerId 
+                        };
+                    }
                 }
             } 
             else if (activeTool === 'TEXT') {
@@ -483,7 +534,7 @@
                     selectedTextId = canvasTexts[clickedIdx].id;
                 } else {
                     const newId = Date.now();
-                    canvasTexts.push({ id: newId, x, y, text: '' });
+                    canvasTexts.push({ id: newId, x, y, text: '', fontSize: 22 });
                     selectedTextId = newId;
                 }
                 updateTextUI();
@@ -513,9 +564,18 @@
                 const pt = getMousePos(e);
                 if (!pt) return;
                 
-                circles[dragInfo.id].cx = pt.x - dragInfo.offsetX;
-                circles[dragInfo.id].cy = pt.y - dragInfo.offsetY;
-                updateDOM();
+                if (dragInfo.type === 'text') {
+                    const txtObj = canvasTexts.find(t => t.id === dragInfo.id);
+                    if (txtObj) {
+                        txtObj.x = pt.x - dragInfo.offsetX;
+                        txtObj.y = pt.y - dragInfo.offsetY;
+                        renderTexts();
+                    }
+                } else if (dragInfo.type === 'circle') {
+                    circles[dragInfo.id].cx = pt.x - dragInfo.offsetX;
+                    circles[dragInfo.id].cy = pt.y - dragInfo.offsetY;
+                    updateDOM();
+                }
             }
         });
 
