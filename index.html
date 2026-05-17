@@ -9,10 +9,19 @@
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Sarabun', sans-serif; }
         /* ป้องกันการคลุมดำและไฮไลท์ข้อความเวลาลาก */
-        #venn-svg {
+        #canvas-container {
             touch-action: none;
             -webkit-user-select: none;
             user-select: none;
+        }
+        /* ซ่อนลูกศรขึ้นลงของช่อง input number */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
         }
     </style>
 </head>
@@ -20,9 +29,17 @@
 
     <div class="max-w-6xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
         <!-- Header -->
-        <div class="bg-blue-600 p-4 sm:p-5 text-white">
-            <h1 class="text-xl md:text-2xl font-bold">เครื่องมือวาดแผนภาพเวนน์แบบอิสระ (Venn Diagram Builder)</h1>
-            <p class="text-blue-100 mt-1 text-sm">ลากวาง ปรับขนาด ระบายสี และพิมพ์ข้อความได้ตามใจชอบ</p>
+        <div class="bg-blue-600 p-4 sm:p-5 text-white flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <img src="https://pgrittutor.com/wp-content/uploads/2024/05/logo_4k-removebg-preview.webp" alt="PGRITTUTOR Logo" class="h-12 md:h-16 object-contain bg-white/10 rounded-lg p-1">
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold">เครื่องมือวาดแผนภาพเวนน์แบบอิสระ (Venn Diagram Builder)</h1>
+                    <p class="text-blue-100 mt-1 text-sm">ลากวาง ปรับขนาด เลือกรุปทรง ระบายสี และพิมพ์ข้อความได้ตามใจชอบ</p>
+                </div>
+            </div>
+            <button onclick="openLivePreview()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold shadow-md hover:bg-blue-50 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap">
+                <span class="text-lg">🖥️</span> เปิด Live Preview
+            </button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-8 p-6">
@@ -42,53 +59,37 @@
                     </button>
                 </div>
 
-                <!-- SVG Canvas -->
-                <svg id="venn-svg" viewBox="0 -30 650 600" class="w-full max-w-[600px] border border-slate-100 bg-white rounded-xl shadow-sm transition-all cursor-grab">
-                    <defs>
-                        <!-- Dynamic Circles for Masks -->
-                        <circle id="cA" cx="300" cy="250" r="120" />
-                        <circle id="cB" cx="400" cy="250" r="0" />
-                        <circle id="cC" cx="350" cy="360" r="0" />
-                        <clipPath id="clipC"><use href="#cC"/></clipPath>
+                <!-- Canvas & SVG Overlay -->
+                <div id="canvas-container" class="relative w-full max-w-[600px] aspect-[650/600] bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden cursor-grab transition-all">
+                    
+                    <!-- Paint Layer (ระบบเทสีใหม่) -->
+                    <canvas id="paint-canvas" width="650" height="600" class="absolute top-0 left-0 w-full h-full bg-white"></canvas>
+                    
+                    <!-- SVG Layer (สำหรับเส้นขอบและตัวหนังสือ) -->
+                    <svg id="venn-svg" viewBox="0 -30 650 600" class="absolute top-0 left-0 w-full h-full pointer-events-none">
+                        <!-- Borders (ตัดระบบ Mask ทิ้ง) -->
+                        <ellipse id="c-A" cx="300" cy="250" rx="120" ry="120" fill="none" stroke="#1E293B" stroke-width="2.5" />
+                        <ellipse id="c-B" cx="400" cy="250" rx="0" ry="0" fill="none" stroke="#1E293B" stroke-width="2.5" style="display:none;" />
+                        <ellipse id="c-C" cx="350" cy="360" rx="0" ry="0" fill="none" stroke="#1E293B" stroke-width="2.5" style="display:none;" />
+                        
+                        <!-- Universe Border -->
+                        <rect x="20" y="0" width="610" height="550" fill="none" stroke="#1E293B" stroke-width="4" />
 
-                        <!-- Region Masks -->
-                        <mask id="m0"><rect width="100%" height="100%" fill="white" /><use href="#cA" fill="black" /><use href="#cB" fill="black" /><use href="#cC" fill="black" /></mask>
-                        <mask id="m1"><rect width="100%" height="100%" fill="white" /><use href="#cA" fill="black" /><use href="#cB" fill="black" /></mask>
-                        <mask id="m2"><rect width="100%" height="100%" fill="white" /><use href="#cA" fill="black" /><use href="#cC" fill="black" /></mask>
-                        <mask id="m3"><use href="#cC" fill="white" /><use href="#cA" fill="black" /></mask>
-                        <mask id="m4"><rect width="100%" height="100%" fill="white" /><use href="#cB" fill="black" /><use href="#cC" fill="black" /></mask>
-                        <mask id="m5"><use href="#cC" fill="white" /><use href="#cB" fill="black" /></mask>
-                        <mask id="m6"><use href="#cB" fill="white" /><use href="#cC" fill="black" /></mask>
-                        <mask id="m7"><use href="#cB" fill="white" clipPath="url(#clipC)" /></mask>
-                    </defs>
+                        <!-- Set Labels -->
+                        <text id="label-A-display" text-anchor="middle" font-size="26" font-weight="bold" fill="#1E293B">A</text>
+                        <text id="label-B-display" text-anchor="middle" font-size="26" font-weight="bold" fill="#1E293B" style="display:none;">B</text>
+                        <text id="label-C-display" text-anchor="middle" font-size="26" font-weight="bold" fill="#1E293B" style="display:none;">C</text>
+                        <text id="label-U-display" x="610" y="35" text-anchor="end" font-size="26" font-weight="bold" fill="#1E293B">U</text>
 
-                    <!-- Painted Regions -->
-                    <rect id="reg-0" x="20" y="0" width="610" height="550" fill="#FFFFFF" mask="url(#m0)" />
-                    <use id="reg-1" href="#cC" fill="#FFFFFF" mask="url(#m1)" />
-                    <use id="reg-2" href="#cB" fill="#FFFFFF" mask="url(#m2)" />
-                    <use id="reg-3" href="#cB" fill="#FFFFFF" mask="url(#m3)" />
-                    <use id="reg-4" href="#cA" fill="#FFFFFF" mask="url(#m4)" />
-                    <use id="reg-5" href="#cA" fill="#FFFFFF" mask="url(#m5)" />
-                    <use id="reg-6" href="#cA" fill="#FFFFFF" mask="url(#m6)" />
-                    <use id="reg-7" href="#cA" fill="#FFFFFF" mask="url(#m7)" />
+                        <!-- Freehand Texts Container -->
+                        <g id="texts-container"></g>
+                    </svg>
+                </div>
 
-                    <!-- Borders -->
-                    <use id="border-A" href="#cA" fill="none" stroke="#1E293B" stroke-width="2.5" />
-                    <use id="border-B" href="#cB" fill="none" stroke="#1E293B" stroke-width="2.5" />
-                    <use id="border-C" href="#cC" fill="none" stroke="#1E293B" stroke-width="2.5" />
-                    <rect x="20" y="0" width="610" height="550" fill="none" stroke="#1E293B" stroke-width="4" />
-
-                    <!-- Set Labels -->
-                    <text id="label-A-display" text-anchor="middle" font-size="26" font-weight="bold" fill="#1E293B" class="pointer-events-none">A</text>
-                    <text id="label-B-display" text-anchor="middle" font-size="26" font-weight="bold" fill="#1E293B" class="pointer-events-none" style="display:none;">B</text>
-                    <text id="label-C-display" text-anchor="middle" font-size="26" font-weight="bold" fill="#1E293B" class="pointer-events-none" style="display:none;">C</text>
-                    <text id="label-U-display" x="610" y="35" text-anchor="end" font-size="26" font-weight="bold" fill="#1E293B" class="pointer-events-none">U</text>
-
-                    <!-- Freehand Texts Container -->
-                    <g id="texts-container"></g>
-                </svg>
-
-                <p id="helper-text" class="text-slate-500 text-sm mt-4 text-center">💡 ลากที่วงกลมหรือข้อความเพื่อย้ายตำแหน่งอิสระ</p>
+                <p id="helper-text" class="text-slate-500 text-sm mt-4 text-center px-4">
+                    💡 ลากที่รูปทรงหรือข้อความเพื่อย้ายตำแหน่งอิสระ <br/>
+                    <span class="text-red-500 text-xs font-semibold">(การย้ายหรือเปลี่ยนขนาดรูปทรง จะทำการรีเซ็ตสีที่ระบายไว้)</span>
+                </p>
             </div>
 
             <!-- Right: Control Panel -->
@@ -96,45 +97,124 @@
                 
                 <!-- Panel: MOVE -->
                 <div id="panel-move" class="mb-6 bg-indigo-50 p-5 rounded-2xl border-2 border-indigo-200 block">
-                    <h2 class="text-lg font-bold text-indigo-900 mb-4">⚙️ จัดการวงกลม</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold text-indigo-900">⚙️ จัดการรูปทรง</h2>
+                        <div class="flex gap-2">
+                            <button onclick="autoNumberRegions()" class="flex items-center gap-1.5 bg-white border border-indigo-300 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-100 active:scale-95 transition-all" title="ใส่ตัวเลขกำกับในทุกพื้นที่ปิดอัตโนมัติ">
+                                <span class="text-base">🔢</span> กำหนดพื้นที่
+                            </button>
+                            <button onclick="autoArrangeSets()" class="flex items-center gap-1.5 bg-white border border-indigo-300 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-100 active:scale-95 transition-all" title="จัดเรียงจุดศูนย์กลางให้สมมาตรตรงกลางจอ">
+                                <span class="text-base">✨</span> จัดสมมาตร
+                            </button>
+                        </div>
+                    </div>
                     
                     <div class="space-y-4">
                         <!-- Set A -->
                         <div class="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
-                            <div class="font-bold text-slate-700 mb-2">วงกลม A (เปิดใช้งานเสมอ)</div>
-                            <div class="flex items-center gap-3">
-                                <span class="text-xs text-slate-500">รัศมี:</span>
-                                <input type="range" id="radius-A" min="40" max="250" value="120" class="flex-1" oninput="updateCircleProps('A', this.value)">
+                            <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+                                <span class="font-bold text-slate-700">เซต A <span class="text-xs font-normal text-slate-400 block">(เปิดใช้งานเสมอ)</span></span>
+                                <div class="flex items-center gap-2">
+                                    <select id="subset-select-A" onchange="updateSubset('A', this.value)" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-500 text-slate-700 bg-slate-50">
+                                        <option value="">แยกอิสระ</option>
+                                        <option value="B">⊂ B</option>
+                                        <option value="C">⊂ C</option>
+                                    </select>
+                                    <select onchange="changeShape('A', this.value)" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-500 text-slate-700">
+                                        <option value="circle">⚪ วงกลม</option>
+                                        <option value="ellipse">🥚 วงรี</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="controls-A-circle" class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-500">เส้นผ่านศูนย์กลาง (1-440):</span>
+                                <input type="number" id="input-r-A" min="1" max="440" value="240" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('A', 'r', this.value)">
+                            </div>
+                            <div id="controls-A-ellipse" class="hidden flex-col gap-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-slate-500">ความยาวแนวนอน X (1-440):</span>
+                                    <input type="number" id="input-rx-A" min="1" max="440" value="320" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('A', 'rx', this.value)">
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-slate-500">ความยาวแนวตั้ง Y (1-440):</span>
+                                    <input type="number" id="input-ry-A" min="1" max="440" value="180" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('A', 'ry', this.value)">
+                                </div>
                             </div>
                         </div>
 
                         <!-- Set B -->
                         <div class="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="font-bold text-slate-700">วงกลม B</span>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="toggle-B" class="sr-only peer" onchange="toggleSet('B', this.checked)">
-                                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                                </label>
+                            <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+                                <span class="font-bold text-slate-700">เซต B</span>
+                                <div class="flex items-center gap-2">
+                                    <select id="subset-select-B" onchange="updateSubset('B', this.value)" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-500 text-slate-700 bg-slate-50 opacity-50 pointer-events-none">
+                                        <option value="">แยกอิสระ</option>
+                                        <option value="A">⊂ A</option>
+                                        <option value="C">⊂ C</option>
+                                    </select>
+                                    <select id="shape-select-B" onchange="changeShape('B', this.value)" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-500 text-slate-700 opacity-50 pointer-events-none">
+                                        <option value="circle">⚪ วงกลม</option>
+                                        <option value="ellipse">🥚 วงรี</option>
+                                    </select>
+                                    <label class="relative inline-flex items-center cursor-pointer ml-2">
+                                        <input type="checkbox" id="toggle-B" class="sr-only peer" onchange="toggleSet('B', this.checked)">
+                                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    </label>
+                                </div>
                             </div>
-                            <div id="controls-B" class="opacity-50 pointer-events-none flex items-center gap-3 transition-opacity">
-                                <span class="text-xs text-slate-500">รัศมี:</span>
-                                <input type="range" id="radius-B" min="40" max="250" value="120" class="flex-1" oninput="updateCircleProps('B', this.value)">
+                            <div id="controls-B" class="opacity-50 pointer-events-none transition-opacity">
+                                <div id="controls-B-circle" class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-slate-500">เส้นผ่านศูนย์กลาง (1-440):</span>
+                                    <input type="number" id="input-r-B" min="1" max="440" value="240" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('B', 'r', this.value)">
+                                </div>
+                                <div id="controls-B-ellipse" class="hidden flex-col gap-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold text-slate-500">ความยาวแนวนอน X (1-440):</span>
+                                        <input type="number" id="input-rx-B" min="1" max="440" value="320" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('B', 'rx', this.value)">
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold text-slate-500">ความยาวแนวตั้ง Y (1-440):</span>
+                                        <input type="number" id="input-ry-B" min="1" max="440" value="180" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('B', 'ry', this.value)">
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Set C -->
                         <div class="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="font-bold text-slate-700">วงกลม C</span>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="toggle-C" class="sr-only peer" onchange="toggleSet('C', this.checked)">
-                                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                                </label>
+                            <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+                                <span class="font-bold text-slate-700">เซต C</span>
+                                <div class="flex items-center gap-2">
+                                    <select id="subset-select-C" onchange="updateSubset('C', this.value)" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-500 text-slate-700 bg-slate-50 opacity-50 pointer-events-none">
+                                        <option value="">แยกอิสระ</option>
+                                        <option value="A">⊂ A</option>
+                                        <option value="B">⊂ B</option>
+                                    </select>
+                                    <select id="shape-select-C" onchange="changeShape('C', this.value)" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-500 text-slate-700 opacity-50 pointer-events-none">
+                                        <option value="circle">⚪ วงกลม</option>
+                                        <option value="ellipse">🥚 วงรี</option>
+                                    </select>
+                                    <label class="relative inline-flex items-center cursor-pointer ml-2">
+                                        <input type="checkbox" id="toggle-C" class="sr-only peer" onchange="toggleSet('C', this.checked)">
+                                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    </label>
+                                </div>
                             </div>
-                            <div id="controls-C" class="opacity-50 pointer-events-none flex items-center gap-3 transition-opacity">
-                                <span class="text-xs text-slate-500">รัศมี:</span>
-                                <input type="range" id="radius-C" min="40" max="250" value="120" class="flex-1" oninput="updateCircleProps('C', this.value)">
+                            <div id="controls-C" class="opacity-50 pointer-events-none transition-opacity">
+                                <div id="controls-C-circle" class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-slate-500">เส้นผ่านศูนย์กลาง (1-440):</span>
+                                    <input type="number" id="input-r-C" min="1" max="440" value="240" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('C', 'r', this.value)">
+                                </div>
+                                <div id="controls-C-ellipse" class="hidden flex-col gap-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold text-slate-500">ความยาวแนวนอน X (1-440):</span>
+                                        <input type="number" id="input-rx-C" min="1" max="440" value="320" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('C', 'rx', this.value)">
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold text-slate-500">ความยาวแนวตั้ง Y (1-440):</span>
+                                        <input type="number" id="input-ry-C" min="1" max="440" value="180" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('C', 'ry', this.value)">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -165,7 +245,6 @@
                     <div class="bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
                         <input type="text" id="text-input" disabled placeholder="คลิกบนภาพก่อน..." class="w-full px-4 py-3 text-lg font-mono border-2 border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-400" oninput="handleTextChange(this.value)">
                         
-                        <!-- เพิ่มส่วนปรับขนาดข้อความ -->
                         <div id="text-size-container" class="mt-4 hidden border-t border-slate-100 pt-3">
                             <label class="block text-xs font-bold text-slate-500 mb-2">ขนาดข้อความ:</label>
                             <div class="flex items-center gap-3">
@@ -199,19 +278,24 @@
 
             </div>
         </div>
+        
+        <!-- Footer / Copyright -->
+        <div class="bg-slate-100 text-slate-600 text-center py-3 text-sm font-semibold border-t border-slate-200">
+            สงวนลิขสิทธิ์ &copy; ทำโดย PGRITTUTOR.com
+        </div>
     </div>
 
     <script>
         // --- State ---
         let activeTool = 'MOVE';
-        const circles = {
-            A: { active: true, cx: 300, cy: 250, r: 120, label: 'A' },
-            B: { active: false, cx: 400, cy: 250, r: 120, label: 'B' },
-            C: { active: false, cx: 350, cy: 360, r: 120, label: 'C' }
+        
+        const setsConfig = {
+            A: { active: true, shape: 'circle', cx: 300, cy: 250, r: 120, rx: 160, ry: 90, label: 'A', subsetOf: '' },
+            B: { active: false, shape: 'circle', cx: 400, cy: 250, r: 120, rx: 160, ry: 90, label: 'B', subsetOf: '' },
+            C: { active: false, shape: 'circle', cx: 350, cy: 360, r: 120, rx: 160, ry: 90, label: 'C', subsetOf: '' }
         };
         let labelU = 'U';
 
-        const regionColors = Array(8).fill('#FFFFFF');
         let selectedBrushColor = '#3B82F6';
         let isEraser = false;
         const AVAILABLE_COLORS = [
@@ -224,8 +308,12 @@
         let canvasTexts = [];
         let selectedTextId = null;
 
+        // --- Live Preview State ---
+        let previewWin = null;
+        let syncSvgTimeout = null;
+
         // --- DOM Elements ---
-        const svg = document.getElementById('venn-svg');
+        const container = document.getElementById('canvas-container');
         const textInput = document.getElementById('text-input');
         const btnDeleteText = document.getElementById('btn-delete-text');
         const textsContainer = document.getElementById('texts-container');
@@ -238,7 +326,8 @@
         // --- Init ---
         function init() {
             renderPalette();
-            updateDOM();
+            updateDOM(false);
+            clearColors();
         }
 
         // --- Tool Management ---
@@ -260,44 +349,212 @@
 
             const helper = document.getElementById('helper-text');
             if(tool === 'MOVE') {
-                svg.className = "w-full max-w-[600px] border border-slate-100 bg-white rounded-xl shadow-sm transition-all cursor-grab";
-                helper.innerText = "💡 ลากที่วงกลมหรือข้อความเพื่อย้ายตำแหน่งอิสระ";
+                container.className = "relative w-full max-w-[600px] aspect-[650/600] bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden cursor-grab transition-all";
+                helper.innerHTML = "💡 ลากที่รูปทรงหรือข้อความเพื่อย้ายตำแหน่งอิสระ <br/><span class='text-red-500 text-xs font-semibold'>(การย้ายหรือเปลี่ยนขนาดรูปร่าง จะทำการรีเซ็ตสีที่ระบายไว้)</span>";
             } else if(tool === 'PAINT') {
-                svg.className = "w-full max-w-[600px] border border-slate-100 bg-white rounded-xl shadow-sm transition-all cursor-crosshair";
-                helper.innerText = "💡 เลือกสีขวามือ และคลิกเทสีลงในช่อง (ทาสีทับเพื่อผสมสี)";
+                container.className = "relative w-full max-w-[600px] aspect-[650/600] bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden cursor-crosshair transition-all";
+                helper.innerHTML = "💡 เลือกสีขวามือ และคลิกเทลงในช่อง (ทาสีทับเพื่อผสมสี)";
             } else {
-                svg.className = "w-full max-w-[600px] border border-slate-100 bg-white rounded-xl shadow-sm transition-all cursor-text";
-                helper.innerText = "💡 คลิกบนพื้นที่ว่างเพื่อเพิ่มข้อความใหม่ หรือคลิกข้อความเดิมเพื่อแก้ไข";
+                container.className = "relative w-full max-w-[600px] aspect-[650/600] bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden cursor-text transition-all";
+                helper.innerHTML = "💡 คลิกบนพื้นที่ว่างเพื่อเพิ่มข้อความใหม่ หรือคลิกข้อความเดิมเพื่อแก้ไข";
                 selectedTextId = null;
                 updateTextUI();
                 renderTexts();
             }
         }
 
+        // --- Set Shape Management ---
         function toggleSet(setId, isActive) {
-            circles[setId].active = isActive;
+            setsConfig[setId].active = isActive;
             const controls = document.getElementById(`controls-${setId}`);
+            const shapeSelect = document.getElementById(`shape-select-${setId}`);
+            const subsetSelect = document.getElementById(`subset-select-${setId}`);
             const labelInput = document.getElementById(`label-${setId}`);
             
             if (isActive) {
                 controls.classList.remove('opacity-50', 'pointer-events-none');
+                if(shapeSelect) shapeSelect.classList.remove('opacity-50', 'pointer-events-none');
+                if(subsetSelect) subsetSelect.classList.remove('opacity-50', 'pointer-events-none');
                 labelInput.disabled = false;
-                if(setId === 'B') { circles.B.cx = 400; circles.B.cy = 250; circles.B.r = parseInt(document.getElementById('radius-B').value); }
-                if(setId === 'C') { circles.C.cx = 350; circles.C.cy = 360; circles.C.r = parseInt(document.getElementById('radius-C').value); }
+                
+                if(setId === 'B') { setsConfig.B.cx = 400; setsConfig.B.cy = 250; }
+                if(setId === 'C') { setsConfig.C.cx = 350; setsConfig.C.cy = 360; }
             } else {
                 controls.classList.add('opacity-50', 'pointer-events-none');
+                if(shapeSelect) shapeSelect.classList.add('opacity-50', 'pointer-events-none');
+                if(subsetSelect) {
+                    subsetSelect.classList.add('opacity-50', 'pointer-events-none');
+                    subsetSelect.value = '';
+                }
                 labelInput.disabled = true;
-                circles[setId].r = 0; 
-                
-                if (setId === 'B') [2, 3, 6, 7].forEach(i => regionColors[i] = '#FFFFFF');
-                else if (setId === 'C') [1, 3, 5, 7].forEach(i => regionColors[i] = '#FFFFFF');
+                setsConfig[setId].subsetOf = ''; // ยกเลิกการเป็นสับเซตถ้าถูกปิดไป
             }
-            updateDOM();
+            updateDOM(true);
         }
 
-        function updateCircleProps(setId, radius) {
-            circles[setId].r = parseInt(radius);
-            updateDOM();
+        function changeShape(setId, shape) {
+            setsConfig[setId].shape = shape;
+            const circleControls = document.getElementById(`controls-${setId}-circle`);
+            const ellipseControls = document.getElementById(`controls-${setId}-ellipse`);
+            
+            if (shape === 'circle') {
+                circleControls.classList.remove('hidden'); circleControls.classList.add('flex');
+                ellipseControls.classList.add('hidden'); ellipseControls.classList.remove('flex');
+            } else {
+                circleControls.classList.add('hidden'); circleControls.classList.remove('flex');
+                ellipseControls.classList.remove('hidden'); ellipseControls.classList.add('flex');
+            }
+            updateDOM(true);
+        }
+
+        function updateProp(setId, propName, lengthVal) {
+            let val = parseInt(lengthVal);
+            if (isNaN(val)) val = 0;
+            if (val > 440) {
+                val = 440;
+                document.getElementById(`input-${propName}-${setId}`).value = 440;
+            }
+            setsConfig[setId][propName] = val / 2;
+            updateDOM(true);
+        }
+
+        function updateSubset(setId, parentId) {
+            setsConfig[setId].subsetOf = parentId;
+        }
+
+        function autoArrangeSets() {
+            const activeSets = ['A', 'B', 'C'].filter(id => setsConfig[id].active);
+            
+            // หา Main Sets (เซตหลักที่ไม่ได้เป็นสับเซตใคร หรือเซตแม่ไม่ได้เปิดอยู่)
+            const mainSets = activeSets.filter(id => !setsConfig[id].subsetOf || !setsConfig[setsConfig[id].subsetOf].active);
+            
+            // 1. จัดเรียงเฉพาะ Main Sets ให้สมมาตร
+            if (mainSets.length === 3) {
+                setsConfig[mainSets[0]].cx = 265; setsConfig[mainSets[0]].cy = 220;
+                setsConfig[mainSets[1]].cx = 385; setsConfig[mainSets[1]].cy = 220;
+                setsConfig[mainSets[2]].cx = 325; setsConfig[mainSets[2]].cy = 324;
+            } else if (mainSets.length === 2) {
+                setsConfig[mainSets[0]].cx = 265; setsConfig[mainSets[0]].cy = 275;
+                setsConfig[mainSets[1]].cx = 385; setsConfig[mainSets[1]].cy = 275;
+            } else if (mainSets.length === 1) {
+                setsConfig[mainSets[0]].cx = 325; setsConfig[mainSets[0]].cy = 275;
+            } else if (mainSets.length === 0 && activeSets.length > 0) {
+                activeSets.forEach(id => {
+                    setsConfig[id].cx = 325; setsConfig[id].cy = 275;
+                });
+            }
+
+            // 2. จับ Subsets ยัดเข้าใส่จุดศูนย์กลางของเซตแม่
+            const subsets = activeSets.filter(id => setsConfig[id].subsetOf && setsConfig[setsConfig[id].subsetOf].active);
+            for(let i=0; i<2; i++) {
+                subsets.forEach(id => {
+                    const parentId = setsConfig[id].subsetOf;
+                    setsConfig[id].cx = setsConfig[parentId].cx;
+                    setsConfig[id].cy = setsConfig[parentId].cy;
+                });
+            }
+            
+            updateDOM(true);
+        }
+
+        // --- ระบบกำหนดพื้นที่ปิดอัตโนมัติ (Auto Number Regions) ---
+        function autoNumberRegions() {
+            // ล้างข้อความเก่าทั้งหมด
+            canvasTexts = [];
+            
+            const w = 650;
+            const h = 600;
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            
+            // วาดเส้นขอบเพื่อจำลองพื้นที่
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, w, h);
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 4; // เส้นหนาพอที่จะกั้นพื้นที่ไม่ให้รั่ว
+            
+            ['A', 'B', 'C'].forEach(id => {
+                const c = setsConfig[id];
+                if (c.active) {
+                    ctx.beginPath();
+                    const rx = c.shape === 'circle' ? c.r : c.rx;
+                    const ry = c.shape === 'circle' ? c.r : c.ry;
+                    ctx.ellipse(c.cx, c.cy + 30, rx, ry, 0, 0, 2 * Math.PI);
+                    ctx.stroke();
+                }
+            });
+            ctx.strokeRect(20, 30, 610, 550); // กรอบ Universe
+            
+            const imgData = ctx.getImageData(0, 0, w, h).data;
+            const visited = new Uint8Array(w * h);
+            
+            let regionNumber = 1;
+            
+            // แสกนพิกัดภายในกรอบ Universe
+            for (let y = 32; y <= 578; y += 2) { // step 2 เพื่อเพิ่มความเร็ว
+                for (let x = 22; x <= 628; x += 2) {
+                    const idx = y * w + x;
+                    
+                    // ถ้าเป็นพื้นที่สีขาว (ไม่ใช่เส้นขอบ) และยังไม่เคยเดินผ่าน
+                    if (imgData[idx * 4] > 100 && !visited[idx]) {
+                        
+                        const points = [];
+                        const q = [x, y];
+                        let head = 0;
+                        visited[idx] = 1;
+                        
+                        // Flood Fill เพื่อหาพิกัดทั้งหมดในพื้นที่ปิดนี้
+                        while (head < q.length) {
+                            const currX = q[head++];
+                            const currY = q[head++];
+                            
+                            points.push({x: currX, y: currY});
+                            
+                            // เช็ค 4 ทิศทาง
+                            const neighbors = [
+                                [currX + 1, currY], [currX - 1, currY],
+                                [currX, currY + 1], [currX, currY - 1]
+                            ];
+                            
+                            for (let [nx, ny] of neighbors) {
+                                if (nx >= 20 && nx <= 630 && ny >= 30 && ny <= 580) {
+                                    const nIdx = ny * w + nx;
+                                    if (imgData[nIdx * 4] > 100 && !visited[nIdx]) {
+                                        visited[nIdx] = 1;
+                                        q.push(nx, ny);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // กรองพื้นที่ขยะ (ขนาดเล็กกว่า 50 พิกเซล ที่เกิดจากรอยหยักเส้น)
+                        if (points.length > 50) {
+                            // หาจุดศูนย์กลางที่รับประกันว่าอยู่ด้านใน (Median ของ Median)
+                            points.sort((a, b) => a.y - b.y);
+                            const midY = points[Math.floor(points.length / 2)].y;
+                            
+                            const rowPoints = points.filter(p => p.y === midY);
+                            rowPoints.sort((a, b) => a.x - b.x);
+                            const midX = rowPoints[Math.floor(rowPoints.length / 2)].x;
+                            
+                            // ใส่ตัวเลขลงในแผนภาพ
+                            canvasTexts.push({
+                                id: Date.now() + regionNumber,
+                                x: midX,
+                                y: midY - 30, // แปลงพิกัดกลับเป็น SVG (ลบ offset ที่ตั้งไว้)
+                                text: regionNumber.toString(),
+                                fontSize: 22
+                            });
+                            regionNumber++;
+                        }
+                    }
+                }
+            }
+            
+            // สลับไปโหมดข้อความอัตโนมัติ เพื่อให้ผู้ใช้เห็นตัวเลข
+            setTool('TEXT');
         }
 
         function updateLabel(id, val) {
@@ -305,28 +562,30 @@
                 labelU = val;
                 document.getElementById('label-U-display').textContent = val;
             } else {
-                circles[id].label = val;
-                updateDOM();
+                setsConfig[id].label = val;
+                updateDOM(false);
             }
         }
 
+        function isInside(sx, sy, setObj) {
+            if (!setObj.active) return false;
+            if (setObj.shape === 'circle') {
+                return Math.hypot(sx - setObj.cx, sy - setObj.cy) <= setObj.r;
+            } else {
+                if (setObj.rx === 0 || setObj.ry === 0) return false;
+                return (Math.pow(sx - setObj.cx, 2) / Math.pow(setObj.rx, 2)) + (Math.pow(sy - setObj.cy, 2) / Math.pow(setObj.ry, 2)) <= 1;
+            }
+        }
+
+        // --- Paint Logic (Canvas Flood Fill) ---
         function hex2rgb(hex) {
             let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
             return { r, g, b };
         }
-        function rgb2hex(r, g, b) {
-            return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1).toUpperCase();
-        }
-        function mixColors(bgHex, brushHex) {
-            if (bgHex.toUpperCase() === '#FFFFFF') return brushHex.toUpperCase();
-            if (brushHex.toUpperCase() === '#FFFFFF') return '#FFFFFF';
-            let c1 = hex2rgb(bgHex), c2 = hex2rgb(brushHex);
-            return rgb2hex(Math.round((c1.r + c2.r) / 2), Math.round((c1.g + c2.g) / 2), Math.round((c1.b + c2.b) / 2));
-        }
 
         function renderPalette() {
-            const container = document.getElementById('color-palette');
-            container.innerHTML = '';
+            const pal = document.getElementById('color-palette');
+            pal.innerHTML = '';
             
             AVAILABLE_COLORS.forEach(c => {
                 const isSelected = !isEraser && selectedBrushColor === c.hex;
@@ -336,21 +595,19 @@
                 btn.title = c.name;
                 btn.onclick = () => { isEraser = false; selectedBrushColor = c.hex; updateBrushPreview(); renderPalette(); };
                 
-                if(isSelected) {
-                    btn.innerHTML = `<span class="absolute inset-0 flex items-center justify-center text-white drop-shadow-md font-bold text-sm mix-blend-difference">✓</span>`;
-                }
-                container.appendChild(btn);
+                if(isSelected) btn.innerHTML = `<span class="absolute inset-0 flex items-center justify-center text-white drop-shadow-md font-bold text-sm mix-blend-difference">✓</span>`;
+                pal.appendChild(btn);
             });
 
             const div = document.createElement('div');
             div.className = "w-px h-8 bg-slate-300 mx-1";
-            container.appendChild(div);
+            pal.appendChild(div);
 
             const eraserBtn = document.createElement('button');
             eraserBtn.className = `relative flex items-center gap-1 px-3 h-10 rounded-full border-2 transition-transform hover:scale-105 active:scale-95 ${isEraser ? 'border-slate-800 bg-slate-200 shadow-md scale-105' : 'border-slate-300 bg-white'}`;
             eraserBtn.onclick = () => { isEraser = true; updateBrushPreview(); renderPalette(); };
             eraserBtn.innerHTML = `<span class="text-lg">🧽</span><span class="text-sm font-bold ${isEraser ? 'text-slate-800' : 'text-slate-500'}">ยางลบ</span>`;
-            container.appendChild(eraserBtn);
+            pal.appendChild(eraserBtn);
         }
 
         function updateBrushPreview() {
@@ -360,8 +617,92 @@
         }
 
         function clearColors() {
-            regionColors.fill('#FFFFFF');
-            updateDOM();
+            const canvas = document.getElementById('paint-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            syncCanvasToPreview();
+        }
+
+        function floodFillPaint(startX, startY, brushHex) {
+            const canvas = document.getElementById('paint-canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            
+            const boundCanvas = document.createElement('canvas');
+            boundCanvas.width = 650; boundCanvas.height = 600;
+            const bCtx = boundCanvas.getContext('2d');
+            bCtx.fillStyle = 'white'; bCtx.fillRect(0,0,650,600);
+            bCtx.strokeStyle = 'black'; bCtx.lineWidth = 3; 
+            
+            ['A', 'B', 'C'].forEach(id => {
+                const c = setsConfig[id];
+                if (c.active) {
+                    bCtx.beginPath();
+                    const rx = c.shape === 'circle' ? c.r : c.rx;
+                    const ry = c.shape === 'circle' ? c.r : c.ry;
+                    bCtx.ellipse(c.cx, c.cy + 30, rx, ry, 0, 0, 2 * Math.PI);
+                    bCtx.stroke();
+                }
+            });
+            bCtx.strokeRect(20, 30, 610, 550); 
+            
+            const bData = bCtx.getImageData(0,0,650,600).data;
+            const paintData = ctx.getImageData(0,0,650,600);
+            const pData = paintData.data;
+            
+            const sx = Math.round(startX);
+            const sy = Math.round(startY);
+            
+            if (sx < 20 || sx > 630 || sy < 30 || sy > 580) return;
+            if (bData[(sy * 650 + sx) * 4] < 100) return; 
+            
+            const w = 650, h = 600;
+            const visited = new Uint8Array(w * h);
+            const q = [sx, sy];
+            
+            let brR=255, brG=255, brB=255;
+            if (brushHex) {
+                const rgb = hex2rgb(brushHex);
+                brR=rgb.r; brG=rgb.g; brB=rgb.b;
+            }
+
+            let head = 0;
+            while(head < q.length) {
+                const x = q[head++];
+                const y = q[head++];
+                
+                let x1 = x;
+                while (x1 >= 0 && bData[(y * w + x1) * 4] > 100 && !visited[y * w + x1]) x1--;
+                x1++;
+                
+                let x2 = x;
+                while (x2 < w && bData[(y * w + x2) * 4] > 100 && !visited[y * w + x2]) x2++;
+                x2--;
+                
+                for (let i = x1; i <= x2; i++) {
+                    const idx = y * w + i;
+                    visited[idx] = 1;
+                    
+                    const pIdx = idx * 4;
+                    if (!brushHex) { 
+                        pData[pIdx] = 255; pData[pIdx+1] = 255; pData[pIdx+2] = 255; pData[pIdx+3] = 255;
+                    } else { 
+                        if (pData[pIdx]===255 && pData[pIdx+1]===255 && pData[pIdx+2]===255) {
+                            pData[pIdx] = brR; pData[pIdx+1] = brG; pData[pIdx+2] = brB;
+                        } else {
+                            pData[pIdx] = Math.round((pData[pIdx] + brR)/2);
+                            pData[pIdx+1] = Math.round((pData[pIdx+1] + brG)/2);
+                            pData[pIdx+2] = Math.round((pData[pIdx+2] + brB)/2);
+                        }
+                        pData[pIdx+3] = 255;
+                    }
+                    
+                    if (y > 0 && bData[((y-1)*w + i)*4] > 100 && !visited[(y-1)*w + i]) q.push(i, y-1);
+                    if (y < h - 1 && bData[((y+1)*w + i)*4] > 100 && !visited[(y+1)*w + i]) q.push(i, y+1);
+                }
+            }
+            ctx.putImageData(paintData, 0, 0);
+            syncCanvasToPreview();
         }
 
         // --- Text Logic ---
@@ -460,172 +801,229 @@
                 g.appendChild(textNode);
                 textsContainer.appendChild(g);
             });
+            syncSvgToPreview();
         }
 
-        // --- เมาส์และการลากที่ถูกปรับปรุงให้สมบูรณ์ (Bullet-proof Drag Events) ---
-        function getMousePos(e) {
-            const pt = svg.createSVGPoint();
-            // รองรับทั้ง MouseEvent และ PointerEvent
-            pt.x = e.clientX;
-            pt.y = e.clientY;
-            const ctm = svg.getScreenCTM();
-            if (!ctm) return null;
-            return pt.matrixTransform(ctm.inverse());
+        // --- Mouse / Touch Events ---
+        let lastTapTime = 0; // เพิ่มตัวแปรสำหรับตรวจจับ Double Tap / Double Click
+
+        function getCoords(e) {
+            const rect = container.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            const scaleX = 650 / rect.width;
+            const scaleY = 600 / rect.height;
+            const cx = (clientX - rect.left) * scaleX;
+            const cy = (clientY - rect.top) * scaleY;
+            
+            return { cx, cy, sx: cx, sy: cy - 30 }; 
         }
 
-        svg.addEventListener('pointerdown', (e) => {
-            // เช็คว่าเป็นเมาส์คลิกซ้ายหรือทัชสกรีนเท่านั้น
+        container.addEventListener('pointerdown', (e) => {
             if (e.pointerType === 'mouse' && e.button !== 0) return; 
-
-            // **สำคัญมาก!** ป้องกันบราวเซอร์เข้าใจผิดว่าผู้ใช้พยายามจะคลุมดำหรือลากรูปภาพปกติ
             e.preventDefault(); 
             
-            const pt = getMousePos(e);
+            const pt = getCoords(e);
             if (!pt) return;
-            const { x, y } = pt;
+            const { sx, sy, cx, cy } = pt;
+
+            // --- ตรวจจับ Double Click / Double Tap ---
+            const currentTime = Date.now();
+            const tapLength = currentTime - lastTapTime;
+            lastTapTime = currentTime;
+
+            if (tapLength < 300 && tapLength > 0) {
+                const hitTextIdx = canvasTexts.findIndex(t => Math.abs(t.x - sx) < 40 && Math.abs(t.y - sy) < 30);
+                if (hitTextIdx >= 0) {
+                    // ถ้าดับเบิ้ลคลิกโดนข้อความ ให้สลับไปโหมด TEXT และเลือกข้อความนั้นทันที
+                    setTool('TEXT');
+                    selectedTextId = canvasTexts[hitTextIdx].id;
+                    updateTextUI();
+                    renderTexts();
+                    return; // ยกเลิกคำสั่ง pointerdown อื่นๆ เพื่อไม่ให้เกิดการลาก
+                }
+            }
+            // ------------------------------------
 
             if (activeTool === 'MOVE') {
-                // เช็คว่ากดโดนข้อความก่อน (เพราะข้อความอยู่ด้านบนสุด)
-                const hitTextIdx = canvasTexts.findIndex(t => Math.abs(t.x - x) < 40 && Math.abs(t.y - y) < 30);
+                const hitTextIdx = canvasTexts.findIndex(t => Math.abs(t.x - sx) < 40 && Math.abs(t.y - sy) < 30);
                 
                 if (hitTextIdx >= 0) {
                     const hitText = canvasTexts[hitTextIdx];
-                    svg.setPointerCapture(e.pointerId);
-                    svg.classList.add('cursor-grabbing');
-                    svg.classList.remove('cursor-grab');
+                    container.setPointerCapture(e.pointerId);
+                    container.classList.add('cursor-grabbing');
+                    container.classList.remove('cursor-grab');
                     
-                    dragInfo = { 
-                        type: 'text',
-                        id: hitText.id, 
-                        offsetX: x - hitText.x, 
-                        offsetY: y - hitText.y,
-                        pointerId: e.pointerId 
-                    };
+                    dragInfo = { type: 'text', id: hitText.id, offsetX: sx - hitText.x, offsetY: sy - hitText.y, pointerId: e.pointerId };
                 } else {
-                    const hitC = circles.C.active && Math.hypot(x - circles.C.cx, y - circles.C.cy) <= circles.C.r;
-                    const hitB = circles.B.active && Math.hypot(x - circles.B.cx, y - circles.B.cy) <= circles.B.r;
-                    const hitA = circles.A.active && Math.hypot(x - circles.A.cx, y - circles.A.cy) <= circles.A.r;
+                    const hitC = isInside(sx, sy, setsConfig.C);
+                    const hitB = isInside(sx, sy, setsConfig.B);
+                    const hitA = isInside(sx, sy, setsConfig.A);
 
                     let targetId = null;
-                    // ลำดับการกด (C ทับ B ทับ A)
                     if (hitC) targetId = 'C';
                     else if (hitB) targetId = 'B';
                     else if (hitA) targetId = 'A';
 
                     if (targetId) {
-                        // **สำคัญมาก!** ล็อกพอยน์เตอร์ให้อยู่กับ SVG ไม่ว่านิ้วจะหลุดกรอบไปไหน
-                        svg.setPointerCapture(e.pointerId);
-                        svg.classList.add('cursor-grabbing');
-                        svg.classList.remove('cursor-grab');
+                        clearColors(); 
+
+                        container.setPointerCapture(e.pointerId);
+                        container.classList.add('cursor-grabbing');
+                        container.classList.remove('cursor-grab');
                         
-                        dragInfo = { 
-                            type: 'circle',
-                            id: targetId, 
-                            offsetX: x - circles[targetId].cx, 
-                            offsetY: y - circles[targetId].cy,
-                            pointerId: e.pointerId 
-                        };
+                        dragInfo = { type: 'shape', id: targetId, offsetX: sx - setsConfig[targetId].cx, offsetY: sy - setsConfig[targetId].cy, pointerId: e.pointerId };
                     }
                 }
             } 
             else if (activeTool === 'TEXT') {
-                const clickedIdx = canvasTexts.findIndex(t => Math.abs(t.x - x) < 30 && Math.abs(t.y - y) < 20);
+                const clickedIdx = canvasTexts.findIndex(t => Math.abs(t.x - sx) < 30 && Math.abs(t.y - sy) < 20);
                 if (clickedIdx >= 0) {
                     selectedTextId = canvasTexts[clickedIdx].id;
                 } else {
                     const newId = Date.now();
-                    canvasTexts.push({ id: newId, x, y, text: '', fontSize: 22 });
+                    canvasTexts.push({ id: newId, x: sx, y: sy, text: '', fontSize: 22 });
                     selectedTextId = newId;
                 }
                 updateTextUI();
                 renderTexts();
             }
             else if (activeTool === 'PAINT') {
-                const inA = circles.A.active && Math.hypot(x - circles.A.cx, y - circles.A.cy) <= circles.A.r;
-                const inB = circles.B.active && Math.hypot(x - circles.B.cx, y - circles.B.cy) <= circles.B.r;
-                const inC = circles.C.active && Math.hypot(x - circles.C.cx, y - circles.C.cy) <= circles.C.r;
-
-                let bit = 0;
-                if (inC) bit |= 1;
-                if (inB) bit |= 2;
-                if (inA) bit |= 4;
-
-                const brush = isEraser ? '#FFFFFF' : selectedBrushColor;
-                regionColors[bit] = mixColors(regionColors[bit], brush);
-                updateDOM();
+                floodFillPaint(cx, cy, isEraser ? null : selectedBrushColor);
             }
         });
 
-        svg.addEventListener('pointermove', (e) => {
+        container.addEventListener('pointermove', (e) => {
             if (activeTool === 'MOVE' && dragInfo && dragInfo.pointerId === e.pointerId) {
-                // ป้องกันการ Scroll บนมือถือระหว่างลากวงกลม
                 e.preventDefault(); 
                 
-                const pt = getMousePos(e);
+                const pt = getCoords(e);
                 if (!pt) return;
                 
                 if (dragInfo.type === 'text') {
                     const txtObj = canvasTexts.find(t => t.id === dragInfo.id);
                     if (txtObj) {
-                        txtObj.x = pt.x - dragInfo.offsetX;
-                        txtObj.y = pt.y - dragInfo.offsetY;
+                        txtObj.x = pt.sx - dragInfo.offsetX;
+                        txtObj.y = pt.sy - dragInfo.offsetY;
                         renderTexts();
                     }
-                } else if (dragInfo.type === 'circle') {
-                    circles[dragInfo.id].cx = pt.x - dragInfo.offsetX;
-                    circles[dragInfo.id].cy = pt.y - dragInfo.offsetY;
-                    updateDOM();
+                } else if (dragInfo.type === 'shape') {
+                    setsConfig[dragInfo.id].cx = pt.sx - dragInfo.offsetX;
+                    setsConfig[dragInfo.id].cy = pt.sy - dragInfo.offsetY;
+                    updateDOM(false); 
                 }
             }
         });
 
-        // จบการทำงานลากเมื่อปล่อยเมาส์/นิ้ว
         const stopDrag = (e) => {
             if (dragInfo && dragInfo.pointerId === e.pointerId) {
-                try { svg.releasePointerCapture(e.pointerId); } catch(err) {}
-                svg.classList.remove('cursor-grabbing');
-                svg.classList.add('cursor-grab');
+                try { container.releasePointerCapture(e.pointerId); } catch(err) {}
+                container.classList.remove('cursor-grabbing');
+                container.classList.add('cursor-grab');
                 dragInfo = null;
             }
         };
 
-        svg.addEventListener('pointerup', stopDrag);
-        svg.addEventListener('pointercancel', stopDrag);
-
+        container.addEventListener('pointerup', stopDrag);
+        container.addEventListener('pointercancel', stopDrag);
 
         // --- Core DOM Update ---
-        function updateDOM() {
+        function updateDOM(geometryChanged = false) {
             ['A', 'B', 'C'].forEach(id => {
-                const c = circles[id];
-                const circleEl = document.getElementById(`c${id}`);
-                const borderEl = document.getElementById(`border-${id}`);
+                const c = setsConfig[id];
+                const el = document.getElementById(`c-${id}`);
                 const labelDisplay = document.getElementById(`label-${id}-display`);
 
-                circleEl.setAttribute('cx', c.cx);
-                circleEl.setAttribute('cy', c.cy);
-                circleEl.setAttribute('r', c.active ? c.r : 0); 
+                el.setAttribute('cx', c.cx);
+                el.setAttribute('cy', c.cy);
+                
+                const rx = c.active ? (c.shape === 'circle' ? c.r : c.rx) : 0;
+                const ry = c.active ? (c.shape === 'circle' ? c.r : c.ry) : 0;
+                
+                el.setAttribute('rx', rx);
+                el.setAttribute('ry', ry);
 
-                borderEl.style.display = c.active ? 'block' : 'none';
+                el.style.display = c.active ? 'block' : 'none';
 
                 if(c.active) {
                     labelDisplay.style.display = 'block';
                     labelDisplay.textContent = c.label;
                     labelDisplay.setAttribute('x', c.cx);
-                    labelDisplay.setAttribute('y', id === 'C' ? c.cy + c.r + 30 : c.cy - c.r - 15); 
+                    labelDisplay.setAttribute('y', id === 'C' ? c.cy + ry + 30 : c.cy - ry - 15); 
                 } else {
                     labelDisplay.style.display = 'none';
                 }
             });
 
-            for (let i = 0; i < 8; i++) {
-                document.getElementById(`reg-${i}`).setAttribute('fill', regionColors[i]);
-                
-                if ((i & 1) && !circles.C.active) document.getElementById(`reg-${i}`).style.display = 'none';
-                else if ((i & 2) && !circles.B.active) document.getElementById(`reg-${i}`).style.display = 'none';
-                else document.getElementById(`reg-${i}`).style.display = 'block';
+            if (geometryChanged) {
+                clearColors();
             }
 
             renderTexts();
+            syncSvgToPreview();
+        }
+
+        // --- Live Preview Logic ---
+        function openLivePreview() {
+            if (previewWin && !previewWin.closed) {
+                previewWin.focus();
+                return;
+            }
+            // เปิดหน้าต่างใหม่
+            previewWin = window.open('', 'VennLivePreview', 'width=800,height=750');
+            previewWin.document.write(`
+                <!DOCTYPE html>
+                <html lang="th">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Live Preview - Venn Diagram</title>
+                    <style>
+                        body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f8fafc; font-family: sans-serif; }
+                        #preview-container { position: relative; width: 650px; height: 600px; background: white; border-radius: 12px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); overflow: hidden; }
+                        img.main-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+                        svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+                        /* ซ่อนกรอบประเส้นประสำหรับข้อความที่ถูกเลือกในหน้าพรีวิว */
+                        rect[stroke-dasharray] { display: none !important; }
+                    </style>
+                </head>
+                <body>
+                    <div id="preview-container">
+                        <img id="preview-canvas-img" class="main-img" src="" />
+                        <div id="preview-svg-container"></div>
+                    </div>
+                </body>
+                </html>
+            `);
+            previewWin.document.close();
+            
+            // Sync ครั้งแรกสุด
+            setTimeout(() => {
+                syncCanvasToPreview();
+                syncSvgToPreview();
+            }, 200);
+        }
+
+        function syncSvgToPreview() {
+            if (!previewWin || previewWin.closed) return;
+            // ใช้ requestAnimationFrame เพื่อป้องกันอาการแลคขณะลาก
+            if (syncSvgTimeout) cancelAnimationFrame(syncSvgTimeout);
+            syncSvgTimeout = requestAnimationFrame(() => {
+                const mainSvg = document.getElementById('venn-svg');
+                const previewSvgContainer = previewWin.document.getElementById('preview-svg-container');
+                if (previewSvgContainer && mainSvg) {
+                    previewSvgContainer.innerHTML = mainSvg.outerHTML;
+                }
+            });
+        }
+
+        function syncCanvasToPreview() {
+            if (!previewWin || previewWin.closed) return;
+            const mainCanvas = document.getElementById('paint-canvas');
+            const previewImg = previewWin.document.getElementById('preview-canvas-img');
+            if (previewImg && mainCanvas) {
+                previewImg.src = mainCanvas.toDataURL('image/png');
+            }
         }
 
         init();
