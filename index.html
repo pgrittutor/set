@@ -223,26 +223,43 @@
                 <!-- Panel: PAINT -->
                 <div id="panel-paint" class="mb-6 hidden">
                     <div class="bg-slate-100 p-4 rounded-xl border border-slate-200">
-                        <div class="flex justify-between items-center mb-3">
-                            <label class="text-sm font-semibold text-slate-700">จานสี (เลือกทีละสี)</label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-3">เครื่องมือระบายสี</label>
+                        <div class="flex items-center gap-4">
+                            <!-- เลือกสี -->
                             <div class="flex items-center gap-2">
-                                <span id="brush-label" class="text-xs text-slate-500 font-medium">สีพู่กัน:</span>
-                                <div id="brush-preview" class="w-8 h-8 rounded-full border-2 border-slate-300 shadow-inner flex items-center justify-center text-sm" style="background-color: #3B82F6;"></div>
+                                <span class="text-xs font-bold text-slate-500">เลือกสี:</span>
+                                <input type="color" id="paint-color-picker" oninput="setPaintColor(this.value)" onclick="turnOffEraser()" value="#3B82F6" class="w-10 h-10 p-0 border-0 rounded cursor-pointer shadow-sm">
                             </div>
+                            <div class="w-px h-8 bg-slate-300 mx-1"></div>
+                            <!-- ยางลบ -->
+                            <button id="btn-eraser" onclick="toggleEraser()" class="relative flex items-center gap-1.5 px-4 h-10 rounded-full border-2 transition-transform hover:scale-105 active:scale-95 border-slate-300 bg-white shadow-sm">
+                                <span class="text-lg">🧽</span><span id="eraser-text" class="text-sm font-bold text-slate-500">ยางลบ</span>
+                            </button>
                         </div>
-                        <div class="flex gap-2 flex-wrap items-center" id="color-palette"></div>
                     </div>
                     <button onclick="clearColors()" class="mt-4 w-full bg-red-50 border border-red-200 hover:bg-red-100 text-red-700 font-bold py-2.5 rounded-lg shadow-sm active:scale-95 transition-transform">
-                        ล้างสีทั้งหมด
+                        ล้างสีทั้งหมดในภาพ
                     </button>
                 </div>
 
                 <!-- Panel: TEXT -->
                 <div id="panel-text" class="mb-6 bg-blue-50 p-5 rounded-2xl border-2 border-blue-200 hidden">
                     <h2 class="text-lg font-bold text-blue-900 mb-1">✏️ พิมพ์ข้อความอิสระ</h2>
-                    <p class="text-sm text-blue-700 mb-4">คลิกจุดใดก็ได้บนภาพเพื่อเริ่มพิมพ์</p>
+                    <p class="text-sm text-blue-700 mb-3">คลิกจุดใดก็ได้บนภาพเพื่อเริ่มพิมพ์</p>
                     
                     <div class="bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
+                        
+                        <!-- เครื่องมือแทรกสัญลักษณ์พิเศษ -->
+                        <div class="flex flex-wrap gap-1.5 mb-3 pb-3 border-b border-slate-100" id="symbol-buttons">
+                            <!-- ใช้ฟอนต์ Serif คณิตศาสตร์เพื่อให้ ∩ และ ∪ ขนาดสมมาตรกันเป๊ะ -->
+                            <button onclick="insertSymbol('∩')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-base font-bold shadow-sm transition-colors" style="font-family: 'Cambria', 'Times New Roman', serif;">∩</button>
+                            <button onclick="insertSymbol('∪')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-base font-bold shadow-sm transition-colors" style="font-family: 'Cambria', 'Times New Roman', serif;">∪</button>
+                            <button onclick="insertSymbol('⊂')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-base font-bold shadow-sm transition-colors" style="font-family: 'Cambria', 'Times New Roman', serif;">⊂</button>
+                            <button onclick="insertSymbol('∈')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-base font-bold shadow-sm transition-colors" style="font-family: 'Cambria', 'Times New Roman', serif;">∈</button>
+                            <button onclick="insertSymbol('⊄')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-base font-bold shadow-sm transition-colors" style="font-family: 'Cambria', 'Times New Roman', serif;">⊄</button>
+                            <button onclick="insertSymbol('∉')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-base font-bold shadow-sm transition-colors" style="font-family: 'Cambria', 'Times New Roman', serif;">∉</button>
+                        </div>
+
                         <input type="text" id="text-input" disabled placeholder="คลิกบนภาพก่อน..." class="w-full px-4 py-3 text-lg font-mono border-2 border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-400" oninput="handleTextChange(this.value)">
                         
                         <div id="text-size-container" class="mt-4 hidden border-t border-slate-100 pt-3">
@@ -253,10 +270,22 @@
                                 <span class="text-lg font-bold text-slate-600">A</span>
                                 <span id="text-size-display" class="text-sm font-bold text-blue-600 w-6 text-right">22</span>
                             </div>
+
+                            <!-- ส่วนจัดการกล่องพื้นหลังขอบมน -->
+                            <div class="mt-3 flex items-center justify-between pt-2 border-t border-slate-100">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="text-box-toggle" onchange="handleTextBoxToggle(this.checked)" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                                    <span class="text-sm font-bold text-slate-600">แสดงกล่องล้อมข้อความ</span>
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-slate-500">สีพื้นหลัง:</span>
+                                    <input type="color" id="text-box-color" onchange="handleTextBoxColor(this.value)" class="w-8 h-8 p-0 border-0 rounded cursor-pointer shadow-sm" value="#ffffff">
+                                </div>
+                            </div>
                         </div>
 
-                        <button id="btn-delete-text" onclick="deleteSelectedText()" class="mt-3 text-xs text-red-500 font-bold hover:underline hidden">
-                            ลบข้อความที่เลือก
+                        <button id="btn-delete-text" onclick="deleteSelectedText()" class="mt-3 w-full py-1.5 text-sm border border-red-200 text-red-500 font-bold hover:bg-red-50 rounded transition-colors hidden">
+                            ลบข้อความนี้
                         </button>
                     </div>
 
@@ -296,13 +325,9 @@
         };
         let labelU = '𝒰';
 
+        // เครื่องมือระบายสี
         let selectedBrushColor = '#3B82F6';
         let isEraser = false;
-        const AVAILABLE_COLORS = [
-            { hex: '#EF4444', name: 'แดง' }, { hex: '#3B82F6', name: 'น้ำเงิน' },
-            { hex: '#FACC15', name: 'เหลือง' }, { hex: '#22C55E', name: 'เขียว' },
-            { hex: '#A855F7', name: 'ม่วง' }
-        ];
 
         let dragInfo = null;
         let canvasTexts = [];
@@ -317,15 +342,16 @@
         const textInput = document.getElementById('text-input');
         const btnDeleteText = document.getElementById('btn-delete-text');
         const textsContainer = document.getElementById('texts-container');
-        const brushPreview = document.getElementById('brush-preview');
-        const brushLabel = document.getElementById('brush-label');
         const textSizeContainer = document.getElementById('text-size-container');
         const textSizeInput = document.getElementById('text-size-input');
         const textSizeDisplay = document.getElementById('text-size-display');
+        const textBoxToggle = document.getElementById('text-box-toggle');
+        const textBoxColor = document.getElementById('text-box-color');
+        const symbolButtons = document.getElementById('symbol-buttons');
 
         // --- Init ---
         function init() {
-            renderPalette();
+            updatePaintUI();
             updateDOM(false);
             clearColors();
         }
@@ -353,7 +379,7 @@
                 helper.innerHTML = "💡 ลากที่รูปทรงหรือข้อความเพื่อย้ายตำแหน่งอิสระ <br/><span class='text-red-500 text-xs font-semibold'>(การย้ายหรือเปลี่ยนขนาดรูปร่าง จะทำการรีเซ็ตสีที่ระบายไว้)</span>";
             } else if(tool === 'PAINT') {
                 container.className = "relative w-full max-w-[600px] aspect-[650/600] bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden cursor-crosshair transition-all";
-                helper.innerHTML = "💡 เลือกสีขวามือ และคลิกเทลงในช่อง (ทาสีทับเพื่อผสมสี)";
+                helper.innerHTML = "💡 เลือกสีแล้วคลิกเทลงในช่อง (ทาสีทับเพื่อผสมสี)";
             } else {
                 container.className = "relative w-full max-w-[600px] aspect-[650/600] bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden cursor-text transition-all";
                 helper.innerHTML = "💡 คลิกบนพื้นที่ว่างเพื่อเพิ่มข้อความใหม่ หรือคลิกข้อความเดิมเพื่อแก้ไข";
@@ -387,7 +413,7 @@
                     subsetSelect.value = '';
                 }
                 labelInput.disabled = true;
-                setsConfig[setId].subsetOf = ''; // ยกเลิกการเป็นสับเซตถ้าถูกปิดไป
+                setsConfig[setId].subsetOf = ''; 
             }
             updateDOM(true);
         }
@@ -425,10 +451,8 @@
         function autoArrangeSets() {
             const activeSets = ['A', 'B', 'C'].filter(id => setsConfig[id].active);
             
-            // หา Main Sets (เซตหลักที่ไม่ได้เป็นสับเซตใคร หรือเซตแม่ไม่ได้เปิดอยู่)
             const mainSets = activeSets.filter(id => !setsConfig[id].subsetOf || !setsConfig[setsConfig[id].subsetOf].active);
             
-            // 1. จัดเรียงเฉพาะ Main Sets ให้สมมาตร
             if (mainSets.length === 3) {
                 setsConfig[mainSets[0]].cx = 265; setsConfig[mainSets[0]].cy = 220;
                 setsConfig[mainSets[1]].cx = 385; setsConfig[mainSets[1]].cy = 220;
@@ -444,7 +468,6 @@
                 });
             }
 
-            // 2. จับ Subsets ยัดเข้าใส่จุดศูนย์กลางของเซตแม่
             const subsets = activeSets.filter(id => setsConfig[id].subsetOf && setsConfig[setsConfig[id].subsetOf].active);
             for(let i=0; i<2; i++) {
                 subsets.forEach(id => {
@@ -457,10 +480,9 @@
             updateDOM(true);
         }
 
-        // --- ระบบกำหนดพื้นที่ปิดอัตโนมัติ (Auto Number Regions) ---
         function autoNumberRegions() {
-            // ล้างข้อความเก่าทั้งหมด
-            canvasTexts = [];
+            // ล้างเฉพาะข้อความที่เกิดจากการ "กำหนดพื้นที่" ครั้งก่อน
+            canvasTexts = canvasTexts.filter(t => !t.isAutoNumber);
             
             const w = 650;
             const h = 600;
@@ -469,11 +491,10 @@
             canvas.height = h;
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
             
-            // วาดเส้นขอบเพื่อจำลองพื้นที่
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, w, h);
             ctx.strokeStyle = 'black';
-            ctx.lineWidth = 4; // เส้นหนาพอที่จะกั้นพื้นที่ไม่ให้รั่ว
+            ctx.lineWidth = 4; 
             
             ['A', 'B', 'C'].forEach(id => {
                 const c = setsConfig[id];
@@ -485,19 +506,17 @@
                     ctx.stroke();
                 }
             });
-            ctx.strokeRect(20, 30, 610, 550); // กรอบ Universe
+            ctx.strokeRect(20, 30, 610, 550); 
             
             const imgData = ctx.getImageData(0, 0, w, h).data;
             const visited = new Uint8Array(w * h);
             
             let regionNumber = 1;
             
-            // แสกนพิกัดภายในกรอบ Universe
-            for (let y = 32; y <= 578; y += 2) { // step 2 เพื่อเพิ่มความเร็ว
+            for (let y = 32; y <= 578; y += 2) { 
                 for (let x = 22; x <= 628; x += 2) {
                     const idx = y * w + x;
                     
-                    // ถ้าเป็นพื้นที่สีขาว (ไม่ใช่เส้นขอบ) และยังไม่เคยเดินผ่าน
                     if (imgData[idx * 4] > 100 && !visited[idx]) {
                         
                         const points = [];
@@ -505,14 +524,12 @@
                         let head = 0;
                         visited[idx] = 1;
                         
-                        // Flood Fill เพื่อหาพิกัดทั้งหมดในพื้นที่ปิดนี้
                         while (head < q.length) {
                             const currX = q[head++];
                             const currY = q[head++];
                             
                             points.push({x: currX, y: currY});
                             
-                            // เช็ค 4 ทิศทาง
                             const neighbors = [
                                 [currX + 1, currY], [currX - 1, currY],
                                 [currX, currY + 1], [currX, currY - 1]
@@ -529,20 +546,17 @@
                             }
                         }
                         
-                        // กรองพื้นที่ขยะ (ขนาดเล็กกว่า 50 พิกเซล ที่เกิดจากรอยหยักเส้น)
                         if (points.length > 50) {
                             
-                            // เช็คว่าเป็นพื้นที่ด้านนอกสุด (Universe) หรือไม่
-                            // โดยดูว่ามีพิกัดจุดไหนสัมผัสขอบนอกของหน้าจอหรือเปล่า
                             let isOuterRegion = false;
                             for (let i = 0; i < points.length; i += 10) {
                                 const px = points[i].x;
                                 const py = points[i].y;
                                 if (
-                                    (px <= 25 && py <= 35) || // มุมซ้ายบน
-                                    (px <= 25 && py >= 575) || // มุมซ้ายล่าง
-                                    (px >= 625 && py >= 575) || // มุมขวาล่าง
-                                    (px >= 625 && py <= 35)    // มุมขวาบน
+                                    (px <= 25 && py <= 35) || 
+                                    (px <= 25 && py >= 575) || 
+                                    (px >= 625 && py >= 575) || 
+                                    (px >= 625 && py <= 35)    
                                 ) {
                                     isOuterRegion = true;
                                     break;
@@ -552,17 +566,15 @@
                             let labelX, labelY;
 
                             if (isOuterRegion) {
-                                // ถ้าเป็นพื้นที่ด้านนอกสุด ให้หามุมที่ว่างๆ เพื่อวางตัวเลข (ไม่ให้ทับวงกลมกลางจอ)
                                 const safeSpots = [
-                                    {x: 45, y: 55},    // จุดปลอดภัย มุมซ้ายบน
-                                    {x: 45, y: 555},   // จุดปลอดภัย มุมซ้ายล่าง
-                                    {x: 605, y: 555}   // จุดปลอดภัย มุมขวาล่าง
+                                    {x: 45, y: 55},    
+                                    {x: 45, y: 555},   
+                                    {x: 605, y: 555}   
                                 ];
                                 
                                 let bestSpot = safeSpots[0];
                                 let minGlobalDist = Infinity;
                                 
-                                // หามุมที่อยู่ใกล้และอยู่ในเขตพื้นที่ว่างมากที่สุด
                                 for (let spot of safeSpots) {
                                     let minDistToSpot = Infinity;
                                     for (let i = 0; i < points.length; i += 5) {
@@ -575,11 +587,9 @@
                                     }
                                 }
                                 
-                                // กำหนดตำแหน่งตัวเลขไปที่มุมที่ปลอดภัย
                                 labelX = bestSpot.x;
                                 labelY = bestSpot.y - 30; 
                             } else {
-                                // ถ้าเป็นพื้นที่ด้านใน (วงกลมหรือส่วนที่ทับกัน) หาจุดกึ่งกลาง (Median) ปกติ
                                 points.sort((a, b) => a.y - b.y);
                                 const midY = points[Math.floor(points.length / 2)].y;
                                 
@@ -591,13 +601,15 @@
                                 labelY = midY - 30;
                             }
                             
-                            // ใส่ตัวเลขลงในแผนภาพ
                             canvasTexts.push({
                                 id: Date.now() + regionNumber,
                                 x: labelX,
                                 y: labelY, 
                                 text: regionNumber.toString(),
-                                fontSize: 22
+                                fontSize: 22,
+                                hasBox: false,
+                                boxColor: '#ffffff',
+                                isAutoNumber: true
                             });
                             regionNumber++;
                         }
@@ -605,7 +617,6 @@
                 }
             }
             
-            // สลับไปโหมดข้อความอัตโนมัติ เพื่อให้ผู้ใช้เห็นตัวเลข
             setTool('TEXT');
         }
 
@@ -629,43 +640,40 @@
             }
         }
 
-        // --- Paint Logic (Canvas Flood Fill) ---
+        // --- Paint Logic ---
         function hex2rgb(hex) {
             let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
             return { r, g, b };
         }
 
-        function renderPalette() {
-            const pal = document.getElementById('color-palette');
-            pal.innerHTML = '';
-            
-            AVAILABLE_COLORS.forEach(c => {
-                const isSelected = !isEraser && selectedBrushColor === c.hex;
-                const btn = document.createElement('button');
-                btn.className = `relative w-10 h-10 rounded-full border-2 transition-transform hover:scale-110 active:scale-95 ${isSelected ? 'border-slate-800 scale-110 shadow-md' : 'border-slate-300'}`;
-                btn.style.backgroundColor = c.hex;
-                btn.title = c.name;
-                btn.onclick = () => { isEraser = false; selectedBrushColor = c.hex; updateBrushPreview(); renderPalette(); };
-                
-                if(isSelected) btn.innerHTML = `<span class="absolute inset-0 flex items-center justify-center text-white drop-shadow-md font-bold text-sm mix-blend-difference">✓</span>`;
-                pal.appendChild(btn);
-            });
-
-            const div = document.createElement('div');
-            div.className = "w-px h-8 bg-slate-300 mx-1";
-            pal.appendChild(div);
-
-            const eraserBtn = document.createElement('button');
-            eraserBtn.className = `relative flex items-center gap-1 px-3 h-10 rounded-full border-2 transition-transform hover:scale-105 active:scale-95 ${isEraser ? 'border-slate-800 bg-slate-200 shadow-md scale-105' : 'border-slate-300 bg-white'}`;
-            eraserBtn.onclick = () => { isEraser = true; updateBrushPreview(); renderPalette(); };
-            eraserBtn.innerHTML = `<span class="text-lg">🧽</span><span class="text-sm font-bold ${isEraser ? 'text-slate-800' : 'text-slate-500'}">ยางลบ</span>`;
-            pal.appendChild(eraserBtn);
+        function setPaintColor(hex) {
+            selectedBrushColor = hex;
+            isEraser = false;
+            updatePaintUI();
         }
 
-        function updateBrushPreview() {
-            brushLabel.innerText = isEraser ? 'โหมดยางลบ:' : 'สีพู่กัน:';
-            brushPreview.style.backgroundColor = isEraser ? '#FFFFFF' : selectedBrushColor;
-            brushPreview.innerHTML = isEraser ? '🧽' : '';
+        function turnOffEraser() {
+            isEraser = false;
+            updatePaintUI();
+        }
+
+        function toggleEraser() {
+            isEraser = !isEraser;
+            updatePaintUI();
+        }
+
+        function updatePaintUI() {
+            const eraserBtn = document.getElementById('btn-eraser');
+            const eraserText = document.getElementById('eraser-text');
+            if (isEraser) {
+                eraserBtn.classList.replace('border-slate-300', 'border-slate-800');
+                eraserBtn.classList.replace('bg-white', 'bg-slate-200');
+                eraserText.classList.replace('text-slate-500', 'text-slate-800');
+            } else {
+                eraserBtn.classList.replace('border-slate-800', 'border-slate-300');
+                eraserBtn.classList.replace('bg-slate-200', 'bg-white');
+                eraserText.classList.replace('text-slate-800', 'text-slate-500');
+            }
         }
 
         function clearColors() {
@@ -758,9 +766,27 @@
         }
 
         // --- Text Logic ---
+        function insertSymbol(sym) {
+            if (textInput.disabled) return;
+            const start = textInput.selectionStart;
+            const end = textInput.selectionEnd;
+            const val = textInput.value;
+            const newVal = val.slice(0, start) + sym + val.slice(end);
+            
+            textInput.value = newVal;
+            
+            setTimeout(() => {
+                textInput.selectionStart = textInput.selectionEnd = start + sym.length;
+                textInput.focus();
+            }, 0);
+            
+            handleTextChange(newVal);
+        }
+
         function handleTextChange(val) {
             if (selectedTextId !== null) {
-                if (/^[a-zA-Z\u0E00-\u0E7F0-9\+\-\*\/\=\(\)\s]*$/.test(val)) {
+                // อัปเดต Regex เพื่อให้รองรับสัญลักษณ์พิเศษที่เพิ่มมา
+                if (/^[a-zA-Z\u0E00-\u0E7F0-9\+\-\*\/\=\(\)\s∩∪⊂∈⊄∉]*$/.test(val)) {
                     const txtObj = canvasTexts.find(t => t.id === selectedTextId);
                     if(txtObj) txtObj.text = val;
                     renderTexts();
@@ -786,11 +812,35 @@
             renderTexts();
         }
 
+        function handleTextBoxToggle(checked) {
+            if (selectedTextId !== null) {
+                const txtObj = canvasTexts.find(t => t.id === selectedTextId);
+                if (txtObj) {
+                    txtObj.hasBox = checked;
+                    if (!txtObj.boxColor) txtObj.boxColor = '#ffffff';
+                    renderTexts();
+                }
+            }
+        }
+
+        function handleTextBoxColor(color) {
+            if (selectedTextId !== null) {
+                const txtObj = canvasTexts.find(t => t.id === selectedTextId);
+                if (txtObj) {
+                    txtObj.boxColor = color;
+                    txtObj.hasBox = true; 
+                    textBoxToggle.checked = true;
+                    renderTexts();
+                }
+            }
+        }
+
         function updateTextUI() {
             if (selectedTextId === null) {
                 textInput.value = '';
                 textInput.disabled = true;
                 textInput.placeholder = "คลิกบนภาพก่อน...";
+                symbolButtons.classList.add('opacity-50', 'pointer-events-none');
                 btnDeleteText.classList.add('hidden');
                 textSizeContainer.classList.add('hidden');
             } else {
@@ -798,12 +848,16 @@
                 textInput.value = txt ? txt.text : '';
                 textInput.disabled = false;
                 textInput.placeholder = "พิมพ์ข้อความ (เช่น 2x+1)";
+                symbolButtons.classList.remove('opacity-50', 'pointer-events-none');
                 btnDeleteText.classList.remove('hidden');
                 textSizeContainer.classList.remove('hidden');
                 
                 const size = txt && txt.fontSize ? txt.fontSize : 22;
                 textSizeInput.value = size;
                 textSizeDisplay.textContent = size;
+
+                textBoxToggle.checked = !!(txt && txt.hasBox);
+                textBoxColor.value = (txt && txt.boxColor) ? txt.boxColor : '#ffffff';
 
                 setTimeout(() => textInput.focus(), 50);
             }
@@ -825,12 +879,37 @@
             canvasTexts.forEach(txt => {
                 const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
                 
+                // 1. วาดกล่องพื้นหลังก่อน (ถ้าเปิดใช้งานไว้)
+                if (txt.hasBox) {
+                    const bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                    // หักล้างสระไทยที่ลอยอยู่ด้านบน/ล่างออกจากการคำนวณความกว้าง
+                    const baseTextLength = txt.text.replace(/[\u0E31-\u0E3A\u0E47-\u0E4E]/g, '').length || 1;
+                    const estWidth = baseTextLength * (txt.fontSize * 0.55) + 20;
+                    const estHeight = txt.fontSize * 1.6;
+                    
+                    bgRect.setAttribute("x", txt.x - estWidth / 2);
+                    bgRect.setAttribute("y", txt.y - estHeight / 2);
+                    bgRect.setAttribute("width", estWidth);
+                    bgRect.setAttribute("height", estHeight);
+                    bgRect.setAttribute("rx", "8");
+                    bgRect.setAttribute("ry", "8");
+                    bgRect.setAttribute("fill", txt.boxColor || "#ffffff");
+                    bgRect.setAttribute("stroke", "#cbd5e1");
+                    bgRect.setAttribute("stroke-width", "1.5");
+                    g.appendChild(bgRect);
+                }
+
+                // 2. กรอบไข่ปลา (เมื่อถูกเลือก)
                 if (activeTool === 'TEXT' && selectedTextId === txt.id) {
                     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                    rect.setAttribute("x", txt.x - 40);
-                    rect.setAttribute("y", txt.y - 20);
-                    rect.setAttribute("width", 80);
-                    rect.setAttribute("height", 40);
+                    const baseTextLength = txt.text.replace(/[\u0E31-\u0E3A\u0E47-\u0E4E]/g, '').length || 1;
+                    const estWidth = baseTextLength * (txt.fontSize * 0.55) + 30;
+                    const estHeight = txt.fontSize * 1.8;
+
+                    rect.setAttribute("x", txt.x - estWidth / 2);
+                    rect.setAttribute("y", txt.y - estHeight / 2);
+                    rect.setAttribute("width", estWidth);
+                    rect.setAttribute("height", estHeight);
                     rect.setAttribute("fill", "none");
                     rect.setAttribute("stroke", "#3B82F6");
                     rect.setAttribute("stroke-width", "2");
@@ -839,6 +918,7 @@
                     g.appendChild(rect);
                 }
 
+                // 3. วาดข้อความทับลงไป
                 const textNode = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 textNode.setAttribute("x", txt.x);
                 textNode.setAttribute("y", txt.y);
@@ -927,12 +1007,12 @@
                 }
             } 
             else if (activeTool === 'TEXT') {
-                const clickedIdx = canvasTexts.findIndex(t => Math.abs(t.x - sx) < 30 && Math.abs(t.y - sy) < 20);
+                const clickedIdx = canvasTexts.findIndex(t => Math.abs(t.x - sx) < 40 && Math.abs(t.y - sy) < 30);
                 if (clickedIdx >= 0) {
                     selectedTextId = canvasTexts[clickedIdx].id;
                 } else {
                     const newId = Date.now();
-                    canvasTexts.push({ id: newId, x: sx, y: sy, text: '', fontSize: 22 });
+                    canvasTexts.push({ id: newId, x: sx, y: sy, text: '', fontSize: 22, hasBox: false, boxColor: '#ffffff' });
                     selectedTextId = newId;
                 }
                 updateTextUI();
