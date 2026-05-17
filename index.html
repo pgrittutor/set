@@ -7,7 +7,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Sarabun', sans-serif; }
+        body { 
+            font-family: 'Sarabun', sans-serif; 
+            background-color: #f1f5f9;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
         /* ป้องกันการคลุมดำและไฮไลท์ข้อความเวลาลาก */
         #canvas-container {
             touch-action: none;
@@ -23,196 +28,231 @@
         input[type=number] {
             -moz-appearance: textfield;
         }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Smooth Transitions */
+        .panel-transition { transition: all 0.3s ease-in-out; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8 flex justify-center items-center">
+<body class="text-slate-800 min-h-screen p-4 md:p-6 lg:p-8 flex justify-center items-start md:items-center">
 
-    <div class="max-w-6xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
-        <!-- Header -->
-        <div class="bg-blue-600 p-4 sm:p-5 text-white flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-4">
-                <img src="https://pgrittutor.com/wp-content/uploads/2024/05/logo_4k-removebg-preview.webp" alt="PGRITTUTOR Logo" class="h-12 md:h-16 object-contain bg-white/10 rounded-lg p-1">
+    <div class="max-w-[1200px] w-full bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl overflow-hidden border border-white/50 ring-1 ring-slate-900/5">
+        
+        <!-- Header: Modernized -->
+        <div class="bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 p-5 md:p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+            <!-- Decorative background elements -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+            <div class="absolute bottom-0 left-0 w-40 h-40 bg-indigo-400 opacity-20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+            
+            <div class="flex items-center gap-4 z-10">
+                <div class="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-white/20 shadow-inner">
+                    <img src="https://pgrittutor.com/wp-content/uploads/2024/05/logo_4k-removebg-preview.webp" alt="PGRITTUTOR Logo" class="h-10 md:h-12 object-contain drop-shadow-md">
+                </div>
                 <div>
-                    <h1 class="text-xl md:text-2xl font-bold">เครื่องมือวาดแผนภาพเวนน์แบบอิสระ (Venn Diagram Builder)</h1>
-                    <p class="text-blue-100 mt-1 text-sm">ลากวาง ปรับขนาด เลือกรุปทรง ระบายสี และพิมพ์ข้อความได้ตามใจชอบ</p>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-tight">เครื่องมือสร้างแผนภาพเวนน์</h1>
+                    <p class="text-blue-100 mt-0.5 text-sm font-medium opacity-90">Venn Diagram Builder &middot; ลากวาง ปรับขนาด ระบายสี พิมพ์ข้อความ</p>
                 </div>
             </div>
-            <button onclick="openLivePreview()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold shadow-md hover:bg-blue-50 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap">
-                <span class="text-lg">🖥️</span> เปิด Live Preview
+            <button onclick="openLivePreview()" class="z-10 group relative inline-flex items-center justify-center px-5 py-2.5 font-bold text-blue-700 bg-white rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-95 overflow-hidden">
+                <span class="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-black"></span>
+                <span class="relative flex items-center gap-2">
+                    <span class="text-xl group-hover:scale-110 transition-transform">🖥️</span> เปิดหน้าพรีวิว
+                </span>
             </button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-8 p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-8 p-6 lg:p-8">
+            
             <!-- Left: Canvas Area -->
             <div class="lg:col-span-7 flex flex-col items-center border-b lg:border-b-0 lg:border-r border-slate-200 pb-8 lg:pb-0 lg:pr-8">
                 
-                <!-- Toolbar -->
-                <div class="flex w-full mb-4 bg-slate-100 p-1 rounded-xl shadow-inner">
-                    <button onclick="setTool('MOVE')" id="btn-tool-move" class="tool-btn flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-sm transition-all bg-white shadow-sm text-blue-600 border border-slate-200">
+                <!-- Toolbar: Segmented Control Style -->
+                <div class="flex w-full mb-6 bg-slate-100/80 backdrop-blur p-1.5 rounded-2xl shadow-inner border border-slate-200/60">
+                    <button onclick="setTool('MOVE')" id="btn-tool-move" class="tool-btn flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 bg-white shadow text-blue-600">
                         <span class="text-lg">✋</span> จัดตำแหน่ง
                     </button>
-                    <button onclick="setTool('PAINT')" id="btn-tool-paint" class="tool-btn flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-sm transition-all text-slate-500 hover:bg-slate-200">
+                    <button onclick="setTool('PAINT')" id="btn-tool-paint" class="tool-btn flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 text-slate-500 hover:text-slate-700 hover:bg-slate-200/50">
                         <span class="text-lg">🖌️</span> ระบายสี
                     </button>
-                    <button onclick="setTool('TEXT')" id="btn-tool-text" class="tool-btn flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-sm transition-all text-slate-500 hover:bg-slate-200">
+                    <button onclick="setTool('TEXT')" id="btn-tool-text" class="tool-btn flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 text-slate-500 hover:text-slate-700 hover:bg-slate-200/50">
                         <span class="text-lg">🔤</span> ใส่ข้อความ
                     </button>
                 </div>
 
                 <!-- Canvas & SVG Overlay -->
-                <div id="canvas-container" class="relative w-full max-w-[600px] aspect-[650/600] bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden cursor-grab transition-all">
-                    
-                    <!-- Paint Layer (ระบบเทสีใหม่) -->
-                    <canvas id="paint-canvas" width="650" height="600" class="absolute top-0 left-0 w-full h-full bg-white"></canvas>
-                    
-                    <!-- SVG Layer (สำหรับเส้นขอบและตัวหนังสือ) -->
-                    <svg id="venn-svg" viewBox="0 -30 650 600" class="absolute top-0 left-0 w-full h-full pointer-events-none">
-                        <!-- Borders (ตัดระบบ Mask ทิ้ง) -->
-                        <ellipse id="c-A" cx="300" cy="250" rx="120" ry="120" fill="none" stroke="#1E293B" stroke-width="2.5" />
-                        <ellipse id="c-B" cx="400" cy="250" rx="0" ry="0" fill="none" stroke="#1E293B" stroke-width="2.5" style="display:none;" />
-                        <ellipse id="c-C" cx="350" cy="360" rx="0" ry="0" fill="none" stroke="#1E293B" stroke-width="2.5" style="display:none;" />
+                <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm w-full max-w-[620px]">
+                    <div id="canvas-container" class="relative w-full aspect-[650/600] bg-white rounded-xl overflow-hidden cursor-grab transition-colors ring-1 ring-slate-900/5">
                         
-                        <!-- Universe Border -->
-                        <rect x="20" y="0" width="610" height="550" fill="none" stroke="#1E293B" stroke-width="4" />
+                        <!-- Paint Layer -->
+                        <canvas id="paint-canvas" width="650" height="600" class="absolute top-0 left-0 w-full h-full bg-white"></canvas>
+                        
+                        <!-- SVG Layer -->
+                        <svg id="venn-svg" viewBox="0 -30 650 600" class="absolute top-0 left-0 w-full h-full pointer-events-none">
+                            <ellipse id="c-A" cx="300" cy="250" rx="120" ry="120" fill="none" stroke="#1E293B" stroke-width="2.5" />
+                            <ellipse id="c-B" cx="400" cy="250" rx="0" ry="0" fill="none" stroke="#1E293B" stroke-width="2.5" style="display:none;" />
+                            <ellipse id="c-C" cx="350" cy="360" rx="0" ry="0" fill="none" stroke="#1E293B" stroke-width="2.5" style="display:none;" />
+                            
+                            <rect x="20" y="0" width="610" height="550" fill="none" stroke="#1E293B" stroke-width="3" rx="8" />
 
-                        <!-- Set Labels -->
-                        <text id="label-A-display" text-anchor="middle" font-size="26" font-weight="bold" fill="#1E293B">A</text>
-                        <text id="label-B-display" text-anchor="middle" font-size="26" font-weight="bold" fill="#1E293B" style="display:none;">B</text>
-                        <text id="label-C-display" text-anchor="middle" font-size="26" font-weight="bold" fill="#1E293B" style="display:none;">C</text>
-                        <text id="label-U-display" x="610" y="35" text-anchor="end" font-size="30" font-weight="bold" font-family="serif" fill="#1E293B">𝒰</text>
+                            <text id="label-A-display" text-anchor="middle" font-size="24" font-weight="bold" fill="#1E293B">A</text>
+                            <text id="label-B-display" text-anchor="middle" font-size="24" font-weight="bold" fill="#1E293B" style="display:none;">B</text>
+                            <text id="label-C-display" text-anchor="middle" font-size="24" font-weight="bold" fill="#1E293B" style="display:none;">C</text>
+                            <text id="label-U-display" x="615" y="35" text-anchor="end" font-size="28" font-weight="bold" font-family="serif" fill="#1E293B">𝒰</text>
 
-                        <!-- Freehand Texts Container -->
-                        <g id="texts-container"></g>
-                    </svg>
+                            <g id="texts-container"></g>
+                        </svg>
+                    </div>
                 </div>
 
-                <p id="helper-text" class="text-slate-500 text-sm mt-4 text-center px-4">
-                    💡 ลากที่รูปทรงหรือข้อความเพื่อย้ายตำแหน่งอิสระ <br/>
-                    <span class="text-red-500 text-xs font-semibold">(การย้ายหรือเปลี่ยนขนาดรูปทรง จะทำการรีเซ็ตสีที่ระบายไว้)</span>
-                </p>
+                <!-- Helper Text -->
+                <div class="mt-5 px-4 py-3 bg-blue-50 text-blue-800 rounded-xl border border-blue-100 flex items-start gap-3 w-full max-w-[620px]">
+                    <span class="text-xl">💡</span>
+                    <div class="text-sm">
+                        <p id="helper-text" class="font-semibold mb-0.5">ลากที่รูปทรงหรือข้อความเพื่อย้ายตำแหน่งอิสระ</p>
+                        <p class="text-blue-600/80 text-xs">(หากย้ายตำแหน่งหรือเปลี่ยนขนาดรูปทรง สีที่ระบายไว้จะถูกรีเซ็ต)</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Right: Control Panel -->
-            <div class="lg:col-span-5 flex flex-col pt-6 lg:pt-0">
+            <!-- Right: Control Panels -->
+            <div class="lg:col-span-5 flex flex-col h-full">
                 
                 <!-- Panel: MOVE -->
-                <div id="panel-move" class="mb-6 bg-indigo-50 p-5 rounded-2xl border-2 border-indigo-200 block">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-bold text-indigo-900">⚙️ จัดการรูปทรง</h2>
+                <div id="panel-move" class="flex-1 block panel-transition">
+                    <div class="flex justify-between items-center mb-5">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span class="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg">⚙️</span>
+                            จัดการรูปทรง
+                        </h2>
                         <div class="flex gap-2">
-                            <button onclick="autoNumberRegions()" class="flex items-center gap-1.5 bg-white border border-indigo-300 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-100 active:scale-95 transition-all" title="ใส่ตัวเลขกำกับในทุกพื้นที่ปิดอัตโนมัติ">
+                            <button onclick="autoNumberRegions()" class="flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all" title="ใส่ตัวเลขกำกับในทุกพื้นที่ปิดอัตโนมัติ">
                                 <span class="text-base">🔢</span> กำหนดพื้นที่
                             </button>
-                            <button onclick="autoArrangeSets()" class="flex items-center gap-1.5 bg-white border border-indigo-300 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-100 active:scale-95 transition-all" title="จัดเรียงจุดศูนย์กลางให้สมมาตรตรงกลางจอ">
-                                <span class="text-base">✨</span> จัดสมมาตร
+                            <button onclick="autoArrangeSets()" class="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-100 hover:border-indigo-300 active:scale-95 transition-all" title="จัดเรียงจุดศูนย์กลางให้สมมาตรตรงกลางจอ">
+                                <span class="text-base">✨</span> สมมาตร
                             </button>
                         </div>
                     </div>
                     
                     <div class="space-y-4">
-                        <!-- Set A -->
-                        <div class="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
-                            <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
-                                <span class="font-bold text-slate-700">เซต A <span class="text-xs font-normal text-slate-400 block">(เปิดใช้งานเสมอ)</span></span>
+                        <!-- Set A Card -->
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all hover:shadow-md hover:border-blue-200">
+                            <div class="bg-slate-50/50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
                                 <div class="flex items-center gap-2">
-                                    <select id="subset-select-A" onchange="updateSubset('A', this.value)" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-500 text-slate-700 bg-slate-50">
+                                    <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                    <span class="font-bold text-slate-700">เซต A</span>
+                                    <span class="text-[10px] font-medium text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200 shadow-sm">เปิดเสมอ</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <select id="subset-select-A" onchange="updateSubset('A', this.value)" class="text-xs font-semibold border border-slate-200 rounded-md px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-600 bg-white shadow-sm cursor-pointer hover:bg-slate-50">
                                         <option value="">แยกอิสระ</option>
-                                        <option value="B">⊂ B</option>
-                                        <option value="C">⊂ C</option>
+                                        <option value="B">⊂ B (สับเซต)</option>
+                                        <option value="C">⊂ C (สับเซต)</option>
                                     </select>
-                                    <select onchange="changeShape('A', this.value)" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-500 text-slate-700">
+                                    <select onchange="changeShape('A', this.value)" class="text-xs font-semibold border border-slate-200 rounded-md px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-600 bg-white shadow-sm cursor-pointer hover:bg-slate-50">
                                         <option value="circle">⚪ วงกลม</option>
                                         <option value="ellipse">🥚 วงรี</option>
                                     </select>
                                 </div>
                             </div>
-                            <div id="controls-A-circle" class="flex items-center justify-between">
-                                <span class="text-xs font-bold text-slate-500">เส้นผ่านศูนย์กลาง (1-440):</span>
-                                <input type="number" id="input-r-A" min="1" max="440" value="240" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('A', 'r', this.value)">
-                            </div>
-                            <div id="controls-A-ellipse" class="hidden flex-col gap-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-xs font-bold text-slate-500">ความยาวแนวนอน X (1-440):</span>
-                                    <input type="number" id="input-rx-A" min="1" max="440" value="320" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('A', 'rx', this.value)">
+                            <div class="p-4">
+                                <div id="controls-A-circle" class="flex items-center gap-4">
+                                    <label class="text-sm font-semibold text-slate-600 flex-1">เส้นผ่านศูนย์กลาง <span class="text-slate-400 font-normal text-xs">(Max 440)</span></label>
+                                    <input type="number" id="input-r-A" min="1" max="440" value="240" class="w-20 px-3 py-1.5 text-base font-bold text-center border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all" oninput="updateProp('A', 'r', this.value)">
                                 </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-xs font-bold text-slate-500">ความยาวแนวตั้ง Y (1-440):</span>
-                                    <input type="number" id="input-ry-A" min="1" max="440" value="180" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('A', 'ry', this.value)">
+                                <div id="controls-A-ellipse" class="hidden flex-col gap-3">
+                                    <div class="flex items-center gap-4">
+                                        <label class="text-sm font-semibold text-slate-600 flex-1">ความกว้างแกน X <span class="text-slate-400 font-normal text-xs">(แนวนอน)</span></label>
+                                        <input type="number" id="input-rx-A" min="1" max="440" value="320" class="w-20 px-3 py-1.5 text-base font-bold text-center border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all" oninput="updateProp('A', 'rx', this.value)">
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <label class="text-sm font-semibold text-slate-600 flex-1">ความสูงแกน Y <span class="text-slate-400 font-normal text-xs">(แนวตั้ง)</span></label>
+                                        <input type="number" id="input-ry-A" min="1" max="440" value="180" class="w-20 px-3 py-1.5 text-base font-bold text-center border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all" oninput="updateProp('A', 'ry', this.value)">
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Set B -->
-                        <div class="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
-                            <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
-                                <span class="font-bold text-slate-700">เซต B</span>
-                                <div class="flex items-center gap-2">
-                                    <select id="subset-select-B" onchange="updateSubset('B', this.value)" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-500 text-slate-700 bg-slate-50 opacity-50 pointer-events-none">
-                                        <option value="">แยกอิสระ</option>
-                                        <option value="A">⊂ A</option>
-                                        <option value="C">⊂ C</option>
-                                    </select>
-                                    <select id="shape-select-B" onchange="changeShape('B', this.value)" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-500 text-slate-700 opacity-50 pointer-events-none">
-                                        <option value="circle">⚪ วงกลม</option>
-                                        <option value="ellipse">🥚 วงรี</option>
-                                    </select>
-                                    <label class="relative inline-flex items-center cursor-pointer ml-2">
+                        <!-- Set B Card -->
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all hover:shadow-md hover:border-blue-200">
+                            <div class="bg-slate-50/50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+                                <div class="flex items-center gap-3">
+                                    <label class="relative inline-flex items-center cursor-pointer" title="เปิด/ปิด เซต B">
                                         <input type="checkbox" id="toggle-B" class="sr-only peer" onchange="toggleSet('B', this.checked)">
-                                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                                        <div class="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-[18px] after:transition-all peer-checked:bg-blue-600"></div>
                                     </label>
+                                    <span class="font-bold text-slate-700">เซต B</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <select id="subset-select-B" onchange="updateSubset('B', this.value)" class="text-xs font-semibold border border-slate-200 rounded-md px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-600 bg-white shadow-sm cursor-pointer hover:bg-slate-50 opacity-50 pointer-events-none transition-opacity">
+                                        <option value="">แยกอิสระ</option>
+                                        <option value="A">⊂ A (สับเซต)</option>
+                                        <option value="C">⊂ C (สับเซต)</option>
+                                    </select>
+                                    <select id="shape-select-B" onchange="changeShape('B', this.value)" class="text-xs font-semibold border border-slate-200 rounded-md px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-600 bg-white shadow-sm cursor-pointer hover:bg-slate-50 opacity-50 pointer-events-none transition-opacity">
+                                        <option value="circle">⚪ วงกลม</option>
+                                        <option value="ellipse">🥚 วงรี</option>
+                                    </select>
                                 </div>
                             </div>
-                            <div id="controls-B" class="opacity-50 pointer-events-none transition-opacity">
-                                <div id="controls-B-circle" class="flex items-center justify-between">
-                                    <span class="text-xs font-bold text-slate-500">เส้นผ่านศูนย์กลาง (1-440):</span>
-                                    <input type="number" id="input-r-B" min="1" max="440" value="240" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('B', 'r', this.value)">
+                            <div id="controls-B" class="p-4 opacity-50 pointer-events-none transition-opacity">
+                                <div id="controls-B-circle" class="flex items-center gap-4">
+                                    <label class="text-sm font-semibold text-slate-600 flex-1">เส้นผ่านศูนย์กลาง <span class="text-slate-400 font-normal text-xs">(Max 440)</span></label>
+                                    <input type="number" id="input-r-B" min="1" max="440" value="240" class="w-20 px-3 py-1.5 text-base font-bold text-center border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all" oninput="updateProp('B', 'r', this.value)">
                                 </div>
-                                <div id="controls-B-ellipse" class="hidden flex-col gap-2">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-slate-500">ความยาวแนวนอน X (1-440):</span>
-                                        <input type="number" id="input-rx-B" min="1" max="440" value="320" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('B', 'rx', this.value)">
+                                <div id="controls-B-ellipse" class="hidden flex-col gap-3">
+                                    <div class="flex items-center gap-4">
+                                        <label class="text-sm font-semibold text-slate-600 flex-1">ความกว้างแกน X <span class="text-slate-400 font-normal text-xs">(แนวนอน)</span></label>
+                                        <input type="number" id="input-rx-B" min="1" max="440" value="320" class="w-20 px-3 py-1.5 text-base font-bold text-center border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all" oninput="updateProp('B', 'rx', this.value)">
                                     </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-slate-500">ความยาวแนวตั้ง Y (1-440):</span>
-                                        <input type="number" id="input-ry-B" min="1" max="440" value="180" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('B', 'ry', this.value)">
+                                    <div class="flex items-center gap-4">
+                                        <label class="text-sm font-semibold text-slate-600 flex-1">ความสูงแกน Y <span class="text-slate-400 font-normal text-xs">(แนวตั้ง)</span></label>
+                                        <input type="number" id="input-ry-B" min="1" max="440" value="180" class="w-20 px-3 py-1.5 text-base font-bold text-center border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all" oninput="updateProp('B', 'ry', this.value)">
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Set C -->
-                        <div class="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
-                            <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
-                                <span class="font-bold text-slate-700">เซต C</span>
+                        <!-- Set C Card -->
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all hover:shadow-md hover:border-blue-200">
+                            <div class="bg-slate-50/50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+                                <div class="flex items-center gap-3">
+                                    <label class="relative inline-flex items-center cursor-pointer" title="เปิด/ปิด เซต C">
+                                        <input type="checkbox" id="toggle-C" class="sr-only peer" onchange="toggleSet('C', this.checked)">
+                                        <div class="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-[18px] after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                    <span class="font-bold text-slate-700">เซต C</span>
+                                </div>
                                 <div class="flex items-center gap-2">
-                                    <select id="subset-select-C" onchange="updateSubset('C', this.value)" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-500 text-slate-700 bg-slate-50 opacity-50 pointer-events-none">
+                                    <select id="subset-select-C" onchange="updateSubset('C', this.value)" class="text-xs font-semibold border border-slate-200 rounded-md px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-600 bg-white shadow-sm cursor-pointer hover:bg-slate-50 opacity-50 pointer-events-none transition-opacity">
                                         <option value="">แยกอิสระ</option>
-                                        <option value="A">⊂ A</option>
-                                        <option value="B">⊂ B</option>
+                                        <option value="A">⊂ A (สับเซต)</option>
+                                        <option value="B">⊂ B (สับเซต)</option>
                                     </select>
-                                    <select id="shape-select-C" onchange="changeShape('C', this.value)" class="text-xs font-bold border border-slate-300 rounded px-2 py-1 outline-none focus:border-indigo-500 text-slate-700 opacity-50 pointer-events-none">
+                                    <select id="shape-select-C" onchange="changeShape('C', this.value)" class="text-xs font-semibold border border-slate-200 rounded-md px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-600 bg-white shadow-sm cursor-pointer hover:bg-slate-50 opacity-50 pointer-events-none transition-opacity">
                                         <option value="circle">⚪ วงกลม</option>
                                         <option value="ellipse">🥚 วงรี</option>
                                     </select>
-                                    <label class="relative inline-flex items-center cursor-pointer ml-2">
-                                        <input type="checkbox" id="toggle-C" class="sr-only peer" onchange="toggleSet('C', this.checked)">
-                                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                                    </label>
                                 </div>
                             </div>
-                            <div id="controls-C" class="opacity-50 pointer-events-none transition-opacity">
-                                <div id="controls-C-circle" class="flex items-center justify-between">
-                                    <span class="text-xs font-bold text-slate-500">เส้นผ่านศูนย์กลาง (1-440):</span>
-                                    <input type="number" id="input-r-C" min="1" max="440" value="240" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('C', 'r', this.value)">
+                            <div id="controls-C" class="p-4 opacity-50 pointer-events-none transition-opacity">
+                                <div id="controls-C-circle" class="flex items-center gap-4">
+                                    <label class="text-sm font-semibold text-slate-600 flex-1">เส้นผ่านศูนย์กลาง <span class="text-slate-400 font-normal text-xs">(Max 440)</span></label>
+                                    <input type="number" id="input-r-C" min="1" max="440" value="240" class="w-20 px-3 py-1.5 text-base font-bold text-center border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all" oninput="updateProp('C', 'r', this.value)">
                                 </div>
-                                <div id="controls-C-ellipse" class="hidden flex-col gap-2">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-slate-500">ความยาวแนวนอน X (1-440):</span>
-                                        <input type="number" id="input-rx-C" min="1" max="440" value="320" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('C', 'rx', this.value)">
+                                <div id="controls-C-ellipse" class="hidden flex-col gap-3">
+                                    <div class="flex items-center gap-4">
+                                        <label class="text-sm font-semibold text-slate-600 flex-1">ความกว้างแกน X <span class="text-slate-400 font-normal text-xs">(แนวนอน)</span></label>
+                                        <input type="number" id="input-rx-C" min="1" max="440" value="320" class="w-20 px-3 py-1.5 text-base font-bold text-center border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all" oninput="updateProp('C', 'rx', this.value)">
                                     </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-slate-500">ความยาวแนวตั้ง Y (1-440):</span>
-                                        <input type="number" id="input-ry-C" min="1" max="440" value="180" class="w-16 px-2 py-1 text-base font-bold text-center border-2 border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" oninput="updateProp('C', 'ry', this.value)">
+                                    <div class="flex items-center gap-4">
+                                        <label class="text-sm font-semibold text-slate-600 flex-1">ความสูงแกน Y <span class="text-slate-400 font-normal text-xs">(แนวตั้ง)</span></label>
+                                        <input type="number" id="input-ry-C" min="1" max="440" value="180" class="w-20 px-3 py-1.5 text-base font-bold text-center border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all" oninput="updateProp('C', 'ry', this.value)">
                                     </div>
                                 </div>
                             </div>
@@ -221,87 +261,135 @@
                 </div>
 
                 <!-- Panel: PAINT -->
-                <div id="panel-paint" class="mb-6 hidden">
-                    <div class="bg-slate-100 p-4 rounded-xl border border-slate-200">
-                        <label class="block text-sm font-semibold text-slate-700 mb-3">เครื่องมือระบายสี</label>
-                        <div class="flex items-center gap-4">
-                            <!-- เลือกสี -->
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold text-slate-500">เลือกสี:</span>
-                                <input type="color" id="paint-color-picker" oninput="setPaintColor(this.value)" onclick="turnOffEraser()" value="#3B82F6" class="w-10 h-10 p-0 border-0 rounded cursor-pointer shadow-sm">
+                <div id="panel-paint" class="flex-1 hidden panel-transition">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-5">
+                        <span class="bg-pink-100 text-pink-600 p-1.5 rounded-lg">🖌️</span>
+                        เครื่องมือระบายสี
+                    </h2>
+                    
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <label class="block text-sm font-semibold text-slate-600 mb-4">เลือกสีพู่กันอิสระ</label>
+                        <div class="flex items-center gap-6">
+                            <!-- Color Picker -->
+                            <div class="flex items-center gap-3">
+                                <div class="relative w-12 h-12 rounded-full overflow-hidden border-2 border-slate-200 shadow-sm hover:scale-105 transition-transform cursor-pointer focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+                                    <input type="color" id="paint-color-picker" oninput="setPaintColor(this.value)" onclick="turnOffEraser()" value="#3B82F6" class="absolute -top-2 -left-2 w-16 h-16 cursor-pointer">
+                                </div>
+                                <span id="brush-label" class="text-sm font-bold text-slate-700">กำลังใช้งานสีนี้</span>
                             </div>
-                            <div class="w-px h-8 bg-slate-300 mx-1"></div>
-                            <!-- ยางลบ -->
-                            <button id="btn-eraser" onclick="toggleEraser()" class="relative flex items-center gap-1.5 px-4 h-10 rounded-full border-2 transition-transform hover:scale-105 active:scale-95 border-slate-300 bg-white shadow-sm">
-                                <span class="text-lg">🧽</span><span id="eraser-text" class="text-sm font-bold text-slate-500">ยางลบ</span>
+                            
+                            <div class="w-px h-10 bg-slate-200"></div>
+                            
+                            <!-- Eraser -->
+                            <button id="btn-eraser" onclick="toggleEraser()" class="relative flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 transition-all hover:bg-slate-50 active:scale-95 bg-white shadow-sm group">
+                                <span class="text-xl group-hover:-rotate-12 transition-transform">🧽</span>
+                                <span id="eraser-text" class="text-sm font-bold text-slate-600">โหมดยางลบ</span>
                             </button>
                         </div>
+                        
+                        <div class="mt-6 pt-5 border-t border-slate-100">
+                            <label class="block text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">สีที่ใช้บ่อย</label>
+                            <div class="flex gap-3 flex-wrap items-center" id="color-palette"></div>
+                        </div>
                     </div>
-                    <button onclick="clearColors()" class="mt-4 w-full bg-red-50 border border-red-200 hover:bg-red-100 text-red-700 font-bold py-2.5 rounded-lg shadow-sm active:scale-95 transition-transform">
-                        ล้างสีทั้งหมดในภาพ
+                    
+                    <button onclick="clearColors()" class="mt-6 w-full bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 font-bold py-3 rounded-xl shadow-sm active:scale-95 transition-all flex justify-center items-center gap-2">
+                        <span>🗑️</span> ล้างสีทั้งหมดในภาพ
                     </button>
                 </div>
 
                 <!-- Panel: TEXT -->
-                <div id="panel-text" class="mb-6 bg-blue-50 p-5 rounded-2xl border-2 border-blue-200 hidden">
-                    <h2 class="text-lg font-bold text-blue-900 mb-1">✏️ พิมพ์ข้อความอิสระ</h2>
-                    <p class="text-sm text-blue-700 mb-3">คลิกจุดใดก็ได้บนภาพเพื่อเริ่มพิมพ์</p>
+                <div id="panel-text" class="flex-1 hidden panel-transition">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-5">
+                        <span class="bg-amber-100 text-amber-600 p-1.5 rounded-lg">🔤</span>
+                        จัดการข้อความอิสระ
+                    </h2>
                     
-                    <div class="bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative">
                         
-                        <!-- เครื่องมือแทรกสัญลักษณ์พิเศษ -->
-                        <div class="flex flex-wrap gap-1.5 mb-3 pb-3 border-b border-slate-100" id="symbol-buttons">
-                            <!-- ใช้ฟอนต์ Serif คณิตศาสตร์เพื่อให้ ∩ และ ∪ ขนาดสมมาตรกันเป๊ะ -->
-                            <button onclick="insertSymbol('∩')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-base font-bold shadow-sm transition-colors" style="font-family: 'Cambria', 'Times New Roman', serif;">∩</button>
-                            <button onclick="insertSymbol('∪')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-base font-bold shadow-sm transition-colors" style="font-family: 'Cambria', 'Times New Roman', serif;">∪</button>
-                            <button onclick="insertSymbol('⊂')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-base font-bold shadow-sm transition-colors" style="font-family: 'Cambria', 'Times New Roman', serif;">⊂</button>
-                            <button onclick="insertSymbol('∈')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-base font-bold shadow-sm transition-colors" style="font-family: 'Cambria', 'Times New Roman', serif;">∈</button>
-                            <button onclick="insertSymbol('⊄')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-base font-bold shadow-sm transition-colors" style="font-family: 'Cambria', 'Times New Roman', serif;">⊄</button>
-                            <button onclick="insertSymbol('∉')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-base font-bold shadow-sm transition-colors" style="font-family: 'Cambria', 'Times New Roman', serif;">∉</button>
+                        <!-- Symbols Keyboard -->
+                        <div class="mb-4">
+                            <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">สัญลักษณ์ทางคณิตศาสตร์</label>
+                            <div class="flex flex-wrap gap-2" id="symbol-buttons">
+                                <button onclick="insertSymbol('∩')" class="w-10 h-10 flex items-center justify-center bg-white border-2 border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-700 rounded-lg text-lg font-bold shadow-sm transition-all" style="font-family: 'Cambria', 'Times New Roman', serif;">∩</button>
+                                <button onclick="insertSymbol('∪')" class="w-10 h-10 flex items-center justify-center bg-white border-2 border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-700 rounded-lg text-lg font-bold shadow-sm transition-all" style="font-family: 'Cambria', 'Times New Roman', serif;">∪</button>
+                                <button onclick="insertSymbol('⊂')" class="w-10 h-10 flex items-center justify-center bg-white border-2 border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-700 rounded-lg text-lg font-bold shadow-sm transition-all" style="font-family: 'Cambria', 'Times New Roman', serif;">⊂</button>
+                                <button onclick="insertSymbol('∈')" class="w-10 h-10 flex items-center justify-center bg-white border-2 border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-700 rounded-lg text-lg font-bold shadow-sm transition-all" style="font-family: 'Cambria', 'Times New Roman', serif;">∈</button>
+                                <button onclick="insertSymbol('⊄')" class="w-10 h-10 flex items-center justify-center bg-white border-2 border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-700 rounded-lg text-lg font-bold shadow-sm transition-all" style="font-family: 'Cambria', 'Times New Roman', serif;">⊄</button>
+                                <button onclick="insertSymbol('∉')" class="w-10 h-10 flex items-center justify-center bg-white border-2 border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-700 rounded-lg text-lg font-bold shadow-sm transition-all" style="font-family: 'Cambria', 'Times New Roman', serif;">∉</button>
+                            </div>
                         </div>
 
-                        <input type="text" id="text-input" disabled placeholder="คลิกบนภาพก่อน..." class="w-full px-4 py-3 text-lg font-mono border-2 border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-400" oninput="handleTextChange(this.value)">
+                        <!-- Text Input -->
+                        <div class="relative">
+                            <input type="text" id="text-input" disabled placeholder="คลิกบนแผนภาพเพื่อเริ่มพิมพ์..." class="w-full px-4 py-3.5 text-lg font-semibold border-2 border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 disabled:bg-slate-50 disabled:text-slate-400 transition-all" oninput="handleTextChange(this.value)">
+                        </div>
                         
-                        <div id="text-size-container" class="mt-4 hidden border-t border-slate-100 pt-3">
-                            <label class="block text-xs font-bold text-slate-500 mb-2">ขนาดข้อความ:</label>
-                            <div class="flex items-center gap-3">
-                                <span class="text-sm font-bold text-slate-400">a</span>
-                                <input type="range" id="text-size-input" min="12" max="72" value="22" class="flex-1 cursor-pointer" oninput="handleTextSizeChange(this.value)">
-                                <span class="text-lg font-bold text-slate-600">A</span>
-                                <span id="text-size-display" class="text-sm font-bold text-blue-600 w-6 text-right">22</span>
-                            </div>
-
-                            <!-- ส่วนจัดการกล่องพื้นหลังขอบมน -->
-                            <div class="mt-3 flex items-center justify-between pt-2 border-t border-slate-100">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" id="text-box-toggle" onchange="handleTextBoxToggle(this.checked)" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
-                                    <span class="text-sm font-bold text-slate-600">แสดงกล่องล้อมข้อความ</span>
+                        <!-- Text Properties Box -->
+                        <div id="text-size-container" class="mt-4 hidden bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <!-- Size Slider -->
+                            <div class="mb-4">
+                                <label class="flex justify-between items-center text-sm font-semibold text-slate-700 mb-2">
+                                    ขนาดข้อความ <span id="text-size-display" class="text-blue-600 bg-blue-100 px-2 py-0.5 rounded font-bold">22</span>
                                 </label>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs font-bold text-slate-500">สีพื้นหลัง:</span>
-                                    <input type="color" id="text-box-color" onchange="handleTextBoxColor(this.value)" class="w-8 h-8 p-0 border-0 rounded cursor-pointer shadow-sm" value="#ffffff">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm font-bold text-slate-400">A</span>
+                                    <input type="range" id="text-size-input" min="12" max="72" value="22" class="flex-1 h-2 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="handleTextSizeChange(this.value)">
+                                    <span class="text-xl font-bold text-slate-600">A</span>
                                 </div>
                             </div>
-                        </div>
 
-                        <button id="btn-delete-text" onclick="deleteSelectedText()" class="mt-3 w-full py-1.5 text-sm border border-red-200 text-red-500 font-bold hover:bg-red-50 rounded transition-colors hidden">
-                            ลบข้อความนี้
-                        </button>
+                            <!-- Box Toggle -->
+                            <div class="flex items-center justify-between pt-4 border-t border-slate-200">
+                                <label class="flex items-center gap-2 cursor-pointer group">
+                                    <div class="relative flex items-center">
+                                        <input type="checkbox" id="text-box-toggle" onchange="handleTextBoxToggle(this.checked)" class="sr-only peer">
+                                        <div class="w-10 h-5.5 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </div>
+                                    <span class="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">กล่องขอบมนล้อมข้อความ</span>
+                                </label>
+                                <div class="flex items-center gap-2 bg-white px-2 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                                    <span class="text-xs font-bold text-slate-500">สีพื้นหลัง:</span>
+                                    <input type="color" id="text-box-color" onchange="handleTextBoxColor(this.value)" class="w-6 h-6 p-0 border-0 rounded cursor-pointer" value="#ffffff">
+                                </div>
+                            </div>
+
+                            <!-- Delete Button -->
+                            <button id="btn-delete-text" onclick="deleteSelectedText()" class="mt-4 w-full py-2 text-sm border-2 border-red-200 text-red-600 font-bold hover:bg-red-50 hover:border-red-300 rounded-lg transition-colors flex items-center justify-center gap-1.5">
+                                <span>🗑️</span> ลบข้อความที่เลือก
+                            </button>
+                        </div>
                     </div>
 
-                    <button onclick="clearAllTexts()" class="mt-4 w-full py-2 bg-white border border-red-200 text-red-600 font-bold rounded-lg hover:bg-red-50 transition-colors">
-                        ลบข้อความทั้งหมดในภาพ
+                    <button onclick="clearAllTexts()" class="mt-6 w-full bg-white border-2 border-red-200 text-red-600 font-bold py-2.5 rounded-xl shadow-sm hover:bg-red-50 hover:border-red-300 active:scale-95 transition-all flex justify-center items-center gap-2">
+                        <span>⚠️</span> ล้างข้อความทั้งหมดในภาพ
                     </button>
                 </div>
 
-                <!-- Label Settings -->
-                <div class="mt-auto pt-6 w-full bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">ตั้งชื่อป้ายกำกับ (Labels)</label>
-                    <div class="flex gap-2">
-                        <div class="flex-1"><input type="text" id="label-A" value="A" oninput="updateLabel('A', this.value)" class="w-full px-2 py-1 text-sm font-medium border rounded text-center focus:outline-none focus:border-blue-500"></div>
-                        <div class="flex-1"><input type="text" id="label-B" value="B" disabled oninput="updateLabel('B', this.value)" class="w-full px-2 py-1 text-sm font-medium border rounded text-center disabled:bg-slate-200 focus:outline-none focus:border-blue-500"></div>
-                        <div class="flex-1"><input type="text" id="label-C" value="C" disabled oninput="updateLabel('C', this.value)" class="w-full px-2 py-1 text-sm font-medium border rounded text-center disabled:bg-slate-200 focus:outline-none focus:border-blue-500"></div>
-                        <div class="flex-1"><input type="text" id="label-U" value="𝒰" oninput="updateLabel('U', this.value)" class="w-full px-2 py-1 text-sm font-medium border rounded text-center focus:outline-none focus:border-blue-500"></div>
+                <!-- Label Settings (Always visible at bottom) -->
+                <div class="mt-auto pt-6 w-full">
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <label class="block text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-slate-300"></span> ตั้งชื่อป้ายกำกับ (Labels)
+                        </label>
+                        <div class="flex gap-3">
+                            <div class="flex-1 relative">
+                                <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">A =</span>
+                                <input type="text" id="label-A" value="A" oninput="updateLabel('A', this.value)" class="w-full pl-9 pr-2 py-2 text-sm font-bold border border-slate-300 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow">
+                            </div>
+                            <div class="flex-1 relative">
+                                <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">B =</span>
+                                <input type="text" id="label-B" value="B" disabled oninput="updateLabel('B', this.value)" class="w-full pl-9 pr-2 py-2 text-sm font-bold border border-slate-300 rounded-lg text-slate-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
+                            </div>
+                            <div class="flex-1 relative">
+                                <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">C =</span>
+                                <input type="text" id="label-C" value="C" disabled oninput="updateLabel('C', this.value)" class="w-full pl-9 pr-2 py-2 text-sm font-bold border border-slate-300 rounded-lg text-slate-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
+                            </div>
+                            <div class="flex-1 relative">
+                                <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">U =</span>
+                                <input type="text" id="label-U" value="𝒰" oninput="updateLabel('U', this.value)" class="w-full pl-9 pr-2 py-2 text-sm font-bold border border-slate-300 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -309,7 +397,7 @@
         </div>
         
         <!-- Footer / Copyright -->
-        <div class="bg-slate-100 text-slate-600 text-center py-3 text-sm font-semibold border-t border-slate-200">
+        <div class="bg-slate-50 text-slate-500 text-center py-4 text-sm font-semibold border-t border-slate-200/60">
             สงวนลิขสิทธิ์ &copy; ทำโดย PGRITTUTOR.com
         </div>
     </div>
@@ -328,6 +416,12 @@
         // เครื่องมือระบายสี
         let selectedBrushColor = '#3B82F6';
         let isEraser = false;
+        const AVAILABLE_COLORS = [
+            { hex: '#EF4444', name: 'แดง' }, { hex: '#3B82F6', name: 'น้ำเงิน' },
+            { hex: '#FACC15', name: 'เหลือง' }, { hex: '#22C55E', name: 'เขียว' },
+            { hex: '#A855F7', name: 'ม่วง' }, { hex: '#F97316', name: 'ส้ม' },
+            { hex: '#EC4899', name: 'ชมพู' }
+        ];
 
         let dragInfo = null;
         let canvasTexts = [];
@@ -351,6 +445,7 @@
 
         // --- Init ---
         function init() {
+            renderPalette();
             updatePaintUI();
             updateDOM(false);
             clearColors();
@@ -363,9 +458,9 @@
             ['MOVE', 'PAINT', 'TEXT'].forEach(t => {
                 const btn = document.getElementById(`btn-tool-${t.toLowerCase()}`);
                 if (t === tool) {
-                    btn.className = "tool-btn flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-sm transition-all bg-white shadow-sm text-blue-600 border border-slate-200";
+                    btn.className = "tool-btn flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 bg-white shadow text-blue-600";
                 } else {
-                    btn.className = "tool-btn flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-sm transition-all text-slate-500 hover:bg-slate-200";
+                    btn.className = "tool-btn flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
                 }
             });
 
@@ -375,14 +470,14 @@
 
             const helper = document.getElementById('helper-text');
             if(tool === 'MOVE') {
-                container.className = "relative w-full max-w-[600px] aspect-[650/600] bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden cursor-grab transition-all";
-                helper.innerHTML = "💡 ลากที่รูปทรงหรือข้อความเพื่อย้ายตำแหน่งอิสระ <br/><span class='text-red-500 text-xs font-semibold'>(การย้ายหรือเปลี่ยนขนาดรูปร่าง จะทำการรีเซ็ตสีที่ระบายไว้)</span>";
+                container.className = "relative w-full aspect-[650/600] bg-white rounded-xl overflow-hidden cursor-grab transition-colors ring-1 ring-slate-900/5";
+                helper.innerHTML = "ลากที่รูปทรงหรือข้อความเพื่อย้ายตำแหน่งอิสระ";
             } else if(tool === 'PAINT') {
-                container.className = "relative w-full max-w-[600px] aspect-[650/600] bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden cursor-crosshair transition-all";
-                helper.innerHTML = "💡 เลือกสีแล้วคลิกเทลงในช่อง (ทาสีทับเพื่อผสมสี)";
+                container.className = "relative w-full aspect-[650/600] bg-white rounded-xl overflow-hidden cursor-crosshair transition-colors ring-2 ring-blue-400";
+                helper.innerHTML = "เลือกสีพู่กัน แล้วคลิกเทสีลงในช่อง (ทาสีทับเพื่อผสมสีกันได้)";
             } else {
-                container.className = "relative w-full max-w-[600px] aspect-[650/600] bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden cursor-text transition-all";
-                helper.innerHTML = "💡 คลิกบนพื้นที่ว่างเพื่อเพิ่มข้อความใหม่ หรือคลิกข้อความเดิมเพื่อแก้ไข";
+                container.className = "relative w-full aspect-[650/600] bg-white rounded-xl overflow-hidden cursor-text transition-colors ring-2 ring-amber-400";
+                helper.innerHTML = "คลิกที่ว่างเพื่อพิมพ์ใหม่ หรือดับเบิ้ลคลิกข้อความเดิมเพื่อแก้ไข";
                 selectedTextId = null;
                 updateTextUI();
                 renderTexts();
@@ -481,7 +576,6 @@
         }
 
         function autoNumberRegions() {
-            // ล้างเฉพาะข้อความที่เกิดจากการ "กำหนดพื้นที่" ครั้งก่อน
             canvasTexts = canvasTexts.filter(t => !t.isAutoNumber);
             
             const w = 650;
@@ -547,7 +641,6 @@
                         }
                         
                         if (points.length > 50) {
-                            
                             let isOuterRegion = false;
                             for (let i = 0; i < points.length; i += 10) {
                                 const px = points[i].x;
@@ -662,18 +755,39 @@
             updatePaintUI();
         }
 
+        function renderPalette() {
+            const pal = document.getElementById('color-palette');
+            pal.innerHTML = '';
+            
+            AVAILABLE_COLORS.forEach(c => {
+                const isSelected = !isEraser && selectedBrushColor.toUpperCase() === c.hex.toUpperCase();
+                const btn = document.createElement('button');
+                btn.className = `w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 active:scale-95 ${isSelected ? 'border-slate-800 scale-110 shadow-md ring-2 ring-offset-1 ring-slate-400' : 'border-slate-200 hover:border-slate-400'}`;
+                btn.style.backgroundColor = c.hex;
+                btn.title = c.name;
+                btn.onclick = () => setPaintColor(c.hex);
+                pal.appendChild(btn);
+            });
+        }
+
         function updatePaintUI() {
             const eraserBtn = document.getElementById('btn-eraser');
             const eraserText = document.getElementById('eraser-text');
+            const pickerLabel = document.getElementById('brush-label');
+            
             if (isEraser) {
-                eraserBtn.classList.replace('border-slate-300', 'border-slate-800');
+                eraserBtn.classList.replace('border-slate-200', 'border-slate-800');
                 eraserBtn.classList.replace('bg-white', 'bg-slate-200');
-                eraserText.classList.replace('text-slate-500', 'text-slate-800');
+                eraserText.classList.replace('text-slate-600', 'text-slate-800');
+                pickerLabel.innerText = "กำลังใช้: ยางลบ";
             } else {
-                eraserBtn.classList.replace('border-slate-800', 'border-slate-300');
+                eraserBtn.classList.replace('border-slate-800', 'border-slate-200');
                 eraserBtn.classList.replace('bg-slate-200', 'bg-white');
-                eraserText.classList.replace('text-slate-800', 'text-slate-500');
+                eraserText.classList.replace('text-slate-800', 'text-slate-600');
+                pickerLabel.innerText = "กำลังใช้สีนี้";
             }
+            document.getElementById('paint-color-picker').value = selectedBrushColor;
+            renderPalette();
         }
 
         function clearColors() {
@@ -785,8 +899,7 @@
 
         function handleTextChange(val) {
             if (selectedTextId !== null) {
-                // อัปเดต Regex เพื่อให้รองรับสัญลักษณ์พิเศษที่เพิ่มมา
-                if (/^[a-zA-Z\u0E00-\u0E7F0-9\+\-\*\/\=\(\)\s∩∪⊂∈⊄∉]*$/.test(val)) {
+                if (/^[a-zA-Z\u0E00-\u0E7F0-9\+\-\*\/\=\(\)\{\}\s∩∪⊂∈⊄∉,]*$/.test(val)) {
                     const txtObj = canvasTexts.find(t => t.id === selectedTextId);
                     if(txtObj) txtObj.text = val;
                     renderTexts();
@@ -879,10 +992,9 @@
             canvasTexts.forEach(txt => {
                 const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
                 
-                // 1. วาดกล่องพื้นหลังก่อน (ถ้าเปิดใช้งานไว้)
+                // 1. วาดกล่องพื้นหลังก่อน
                 if (txt.hasBox) {
                     const bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                    // หักล้างสระไทยที่ลอยอยู่ด้านบน/ล่างออกจากการคำนวณความกว้าง
                     const baseTextLength = txt.text.replace(/[\u0E31-\u0E3A\u0E47-\u0E4E]/g, '').length || 1;
                     const estWidth = baseTextLength * (txt.fontSize * 0.55) + 20;
                     const estHeight = txt.fontSize * 1.6;
@@ -899,7 +1011,7 @@
                     g.appendChild(bgRect);
                 }
 
-                // 2. กรอบไข่ปลา (เมื่อถูกเลือก)
+                // 2. กรอบไข่ปลา
                 if (activeTool === 'TEXT' && selectedTextId === txt.id) {
                     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
                     const baseTextLength = txt.text.replace(/[\u0E31-\u0E3A\u0E47-\u0E4E]/g, '').length || 1;
@@ -918,7 +1030,7 @@
                     g.appendChild(rect);
                 }
 
-                // 3. วาดข้อความทับลงไป
+                // 3. ข้อความทับลงไป
                 const textNode = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 textNode.setAttribute("x", txt.x);
                 textNode.setAttribute("y", txt.y);
@@ -928,6 +1040,8 @@
                 textNode.setAttribute("font-weight", "bold");
                 textNode.setAttribute("fill", "#0F172A");
                 textNode.setAttribute("class", "pointer-events-none");
+                // ใช้ font กึ่งคณิตศาสตร์เพื่อให้สัญลักษณ์ดูสวยงามกลมกลืนกับตัวหนังสือ
+                textNode.setAttribute("font-family", "'Sarabun', 'Cambria', sans-serif");
                 textNode.textContent = txt.text;
 
                 g.appendChild(textNode);
