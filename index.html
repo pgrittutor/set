@@ -531,19 +531,71 @@
                         
                         // กรองพื้นที่ขยะ (ขนาดเล็กกว่า 50 พิกเซล ที่เกิดจากรอยหยักเส้น)
                         if (points.length > 50) {
-                            // หาจุดศูนย์กลางที่รับประกันว่าอยู่ด้านใน (Median ของ Median)
-                            points.sort((a, b) => a.y - b.y);
-                            const midY = points[Math.floor(points.length / 2)].y;
                             
-                            const rowPoints = points.filter(p => p.y === midY);
-                            rowPoints.sort((a, b) => a.x - b.x);
-                            const midX = rowPoints[Math.floor(rowPoints.length / 2)].x;
+                            // เช็คว่าเป็นพื้นที่ด้านนอกสุด (Universe) หรือไม่
+                            // โดยดูว่ามีพิกัดจุดไหนสัมผัสขอบนอกของหน้าจอหรือเปล่า
+                            let isOuterRegion = false;
+                            for (let i = 0; i < points.length; i += 10) {
+                                const px = points[i].x;
+                                const py = points[i].y;
+                                if (
+                                    (px <= 25 && py <= 35) || // มุมซ้ายบน
+                                    (px <= 25 && py >= 575) || // มุมซ้ายล่าง
+                                    (px >= 625 && py >= 575) || // มุมขวาล่าง
+                                    (px >= 625 && py <= 35)    // มุมขวาบน
+                                ) {
+                                    isOuterRegion = true;
+                                    break;
+                                }
+                            }
+
+                            let labelX, labelY;
+
+                            if (isOuterRegion) {
+                                // ถ้าเป็นพื้นที่ด้านนอกสุด ให้หามุมที่ว่างๆ เพื่อวางตัวเลข (ไม่ให้ทับวงกลมกลางจอ)
+                                const safeSpots = [
+                                    {x: 45, y: 55},    // จุดปลอดภัย มุมซ้ายบน
+                                    {x: 45, y: 555},   // จุดปลอดภัย มุมซ้ายล่าง
+                                    {x: 605, y: 555}   // จุดปลอดภัย มุมขวาล่าง
+                                ];
+                                
+                                let bestSpot = safeSpots[0];
+                                let minGlobalDist = Infinity;
+                                
+                                // หามุมที่อยู่ใกล้และอยู่ในเขตพื้นที่ว่างมากที่สุด
+                                for (let spot of safeSpots) {
+                                    let minDistToSpot = Infinity;
+                                    for (let i = 0; i < points.length; i += 5) {
+                                        const d = Math.hypot(points[i].x - spot.x, points[i].y - spot.y);
+                                        if (d < minDistToSpot) minDistToSpot = d;
+                                    }
+                                    if (minDistToSpot < minGlobalDist) {
+                                        minGlobalDist = minDistToSpot;
+                                        bestSpot = spot;
+                                    }
+                                }
+                                
+                                // กำหนดตำแหน่งตัวเลขไปที่มุมที่ปลอดภัย
+                                labelX = bestSpot.x;
+                                labelY = bestSpot.y - 30; 
+                            } else {
+                                // ถ้าเป็นพื้นที่ด้านใน (วงกลมหรือส่วนที่ทับกัน) หาจุดกึ่งกลาง (Median) ปกติ
+                                points.sort((a, b) => a.y - b.y);
+                                const midY = points[Math.floor(points.length / 2)].y;
+                                
+                                const rowPoints = points.filter(p => p.y === midY);
+                                rowPoints.sort((a, b) => a.x - b.x);
+                                const midX = rowPoints[Math.floor(rowPoints.length / 2)].x;
+
+                                labelX = midX;
+                                labelY = midY - 30;
+                            }
                             
                             // ใส่ตัวเลขลงในแผนภาพ
                             canvasTexts.push({
                                 id: Date.now() + regionNumber,
-                                x: midX,
-                                y: midY - 30, // แปลงพิกัดกลับเป็น SVG (ลบ offset ที่ตั้งไว้)
+                                x: labelX,
+                                y: labelY, 
                                 text: regionNumber.toString(),
                                 fontSize: 22
                             });
